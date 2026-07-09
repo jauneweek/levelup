@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+/* =========================================================
+   LEVELUP — Direction artistique « Système » (SPEC §9.1)
+   Tokens verrouillés. Ne pas modifier les valeurs sans GO.
+   ========================================================= */
+:root {
+  /* Fonds */
+  --bg-abyss: #05050a; /* fond global */
+  --bg-panel: rgba(18, 16, 32, 0.55); /* panneaux verre */
+  --border-glow: rgba(124, 58, 237, 0.45);
+
+  /* Accents */
+  --violet: #7c3aed; /* accent principal — ordre, Système */
+  --cyan: #22d3ee; /* accent secondaire — data, radar */
+  --amber: #f59e0b; /* événements, donjon express, urgence positive */
+  --danger: #ef4444; /* boss, jour maudit, pénalités — corruption rouge */
+  --ghost: #93c5fd; /* le Fantôme — bleu pâle translucide */
+
+  /* Texte */
+  --text-primary: #ededf7;
+  --text-muted: #8b8aa3;
+}
+
+/* Expose les tokens comme utilitaires Tailwind v4 (bg-abyss, text-violet…) */
+@theme inline {
+  --color-abyss: var(--bg-abyss);
+  --color-panel: var(--bg-panel);
+  --color-border-glow: var(--border-glow);
+  --color-violet: var(--violet);
+  --color-cyan: var(--cyan);
+  --color-amber: var(--amber);
+  --color-danger: var(--danger);
+  --color-ghost: var(--ghost);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-orbitron);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  background-color: var(--bg-abyss);
+  /* Nappe de gradient sobre (Hub quotidien : glow discret, pas de particules) */
+  background-image:
+    radial-gradient(
+      120% 80% at 50% -10%,
+      rgba(124, 58, 237, 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      90% 60% at 100% 110%,
+      rgba(34, 211, 238, 0.08),
+      transparent 55%
+    );
+  background-attachment: fixed;
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Typo display anguleuse : titres de rang, gros chiffres, [SYSTÈME] */
+.font-display {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   Composant signature « Fenêtre Système » (SPEC §9.2)
+   panneau verre + blur + bordure glow + corner brackets
+   ========================================================= */
+.system-window {
+  position: relative;
+  background: var(--bg-panel);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glow);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgba(124, 58, 237, 0.08),
+    0 20px 60px -20px rgba(124, 58, 237, 0.45),
+    inset 0 0 40px -20px rgba(124, 58, 237, 0.35);
+}
+
+/* 4 équerres lumineuses aux coins */
+.sw-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--violet);
+  border-style: solid;
+  border-width: 0;
+  filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.9));
+  pointer-events: none;
+}
+.sw-corner--tl {
+  top: -1px;
+  left: -1px;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+.sw-corner--tr {
+  top: -1px;
+  right: -1px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+.sw-corner--bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+.sw-corner--br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+
+/* Header précédé de [SYSTÈME] */
+.sw-header::before {
+  content: "[SYSTÈME]";
+  display: block;
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--violet);
+  margin-bottom: 0.35rem;
+}
+
+/* Entrées de panneaux : fade + rise (respecte prefers-reduced-motion) */
+@keyframes sw-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.sw-enter {
+  animation: sw-rise 200ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sw-enter {
+    animation: none;
+  }
+}
