@@ -35,6 +35,14 @@ insert into habits (id, user_id, name, stat, difficulty)
 values ('44444444-4444-4444-4444-444444444444',
         '33333333-3333-3333-3333-333333333333', 'muscu', 'FOR', 'hard');
 
+-- Décoy toujours incomplète : empêche ce test de croiser accidentellement le
+-- bonus « journée parfaite » (M2) — ce fichier teste isolément le
+-- multiplicateur de streak, le bonus journée parfaite a son propre test
+-- dans close_day_test.sql.
+insert into habits (id, user_id, name, stat, difficulty)
+values ('dddddddd-dddd-dddd-dddd-dddddddddddd',
+        '33333333-3333-3333-3333-333333333333', 'décoy jamais faite', 'SAG', 'easy');
+
 -- 1er check-in : XP complet, pas de multiplicateur (streak = 1).
 select results_eq(
   $$ select (complete_habit('44444444-4444-4444-4444-444444444444')->>'xp_earned')::int $$,
