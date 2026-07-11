@@ -6,6 +6,7 @@ import { StatBar } from "@/components/stat-bar";
 import { HexChip } from "@/components/hex-chip";
 import { STAT_LABELS, DIFFICULTY_XP, type StatCode } from "@/lib/xp";
 import { todayInTimezone } from "@/lib/date";
+import { PushSubscribeButton } from "@/components/push-subscribe-button";
 import { completeHabit } from "./habits/actions";
 
 const STAT_ORDER: StatCode[] = ["FOR", "INT", "SAG", "PRO", "END"];
@@ -165,6 +166,14 @@ export default async function Home() {
           >
             Gérer mes quêtes →
           </Link>
+        </SystemWindow>
+
+        <SystemWindow title="Rappels du Système" showSystemTag={false}>
+          <p className="mb-3 text-xs text-text-muted">
+            Reçois un rappel [SYSTÈME] avant l&apos;heure limite de tes
+            quêtes (T-30, T-15).
+          </p>
+          <PushSubscribeButton />
         </SystemWindow>
 
         <form action="/auth/signout" method="post">

@@ -52,7 +52,7 @@ begin
 end;
 $$;
 
-revoke execute on function public.recompute_profile_progress(uuid) from public;
+revoke execute on function public.recompute_profile_progress(uuid) from public, anon, authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 3. complete_habit() — ajout bonus journée parfaite ×1.5 (M2)
@@ -425,7 +425,7 @@ $$;
 
 -- Postgres accorde EXECUTE à PUBLIC par défaut à la création d'une fonction :
 -- révocation explicite, ce n'est pas un endpoint client (système only).
-revoke execute on function public.close_day(uuid, date) from public;
+revoke execute on function public.close_day(uuid, date) from public, anon, authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 5. run_midnight_close — scanne les users dont minuit local vient de passer
@@ -451,7 +451,7 @@ begin
 end;
 $$;
 
-revoke execute on function public.run_midnight_close() from public;
+revoke execute on function public.run_midnight_close() from public, anon, authenticated;
 
 -- pg_cron : toutes les 15 min, cohérent avec la fenêtre testée ci-dessus.
 create extension if not exists pg_cron;
