@@ -94,15 +94,30 @@ as $$
 declare
   v_tz          text;
   v_today       date;
+  v_yesterday   date;
   v_rate_7d     numeric;
+  v_has_history boolean;
   v_ignored     int;
   v_streak      int;
   v_boss_active boolean;
 begin
   select timezone into v_tz from profiles where id = p_user_id;
   v_today := (now() at time zone v_tz)::date;
+  v_yesterday := v_today - 1;
 
-  v_rate_7d := public.completion_rate_7d(p_user_id, v_today);
+  -- Taux calculé sur les jours pleinement écoulés (hier et avant) : la
+  -- journée en cours n'est pas terminée, une habitude pas encore cochée
+  -- aujourd'hui ne doit pas compter comme un échec avant même minuit.
+  v_rate_7d := public.completion_rate_7d(p_user_id, v_yesterday);
+
+  -- Un compte neuf (aucune habitude ayant vécu au moins un jour plein) n'a
+  -- pas d'historique à juger : ni slump, ni régulier, ton neutre par défaut
+  -- (trouvé en testant M3 en conditions réelles — un compte tout juste créé
+  -- se retrouvait classé "slump" par défaut, ce qui écrasait l'escalade).
+  select exists (
+    select 1 from habits h
+    where h.user_id = p_user_id and h.created_at::date <= v_yesterday
+  ) into v_has_history;
 
   select count(distinct nl.habit_id) into v_ignored
     from notification_log nl
@@ -123,8 +138,8 @@ begin
 
   return jsonb_build_object(
     'completion_rate_7d', v_rate_7d,
-    'is_slump', v_rate_7d < 0.40,
-    'is_regular', v_rate_7d > 0.85,
+    'is_slump', v_has_history and v_rate_7d < 0.40,
+    'is_regular', v_has_history and v_rate_7d > 0.85,
     'ignored_count_today', v_ignored,
     'current_streak', coalesce(v_streak, 0),
     'boss_active', v_boss_active

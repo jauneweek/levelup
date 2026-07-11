@@ -7,7 +7,7 @@
 begin;
 create extension if not exists pgtap;
 
-select plan(11);
+select plan(14);
 
 -- ============================================================================
 -- interpolate_template
@@ -27,7 +27,30 @@ values ('c0000000-0000-0000-0000-000000000001', 'ctx@test.dev', '{"timezone":"UT
 
 select is(
   (get_notification_context('c0000000-0000-0000-0000-000000000001')->>'is_slump')::boolean,
-  false, 'get_notification_context: pas de slump par défaut (aucun historique -> rate=1.0)'
+  false, 'get_notification_context: pas de slump par défaut (aucun historique)'
+);
+select is(
+  (get_notification_context('c0000000-0000-0000-0000-000000000001')->>'is_regular')::boolean,
+  false, 'get_notification_context: pas régulier non plus par défaut (aucun historique)'
+);
+
+-- Compte neuf avec une habitude créée aujourd'hui (0 jour vécu) : trouvé en
+-- testant M3 sur un vrai iPhone — se retrouvait classé "slump" par défaut,
+-- ce qui écrasait l'escalade dès le tout premier rappel.
+insert into auth.users (id, email, raw_user_meta_data)
+values ('c0000000-0000-0000-0000-00000000000f', 'fresh@test.dev', '{"timezone":"UTC"}'::jsonb);
+insert into habits (id, user_id, name, stat, difficulty, schedule)
+values ('c0000000-0000-0000-0000-000000000ffa',
+        'c0000000-0000-0000-0000-00000000000f', 'toute nouvelle', 'FOR', 'easy',
+        '{"days":[1,2,3,4,5,6,7]}'::jsonb);
+
+select is(
+  (get_notification_context('c0000000-0000-0000-0000-00000000000f')->>'is_slump')::boolean,
+  false, 'compte neuf (habitude créée aujourd''hui, 0 historique) : pas slump'
+);
+select is(
+  (get_notification_context('c0000000-0000-0000-0000-00000000000f')->>'is_regular')::boolean,
+  false, 'compte neuf (habitude créée aujourd''hui, 0 historique) : pas régulier non plus'
 );
 
 -- ============================================================================
