@@ -212,9 +212,15 @@ $$;
 -- un accès résiduel via PUBLIC en parallèle du grant authenticated
 -- (trouvé en vérifiant le projet distant en M3 — complete_habit se
 -- protège en interne via auth.uid(), mais le grant restait trop large).
-revoke execute on function public.complete_habit(uuid) from public;
-revoke execute on function public.xp_to_next_level(int) from public;
-revoke execute on function public.rank_for_level(int) from public;
+-- La plateforme Supabase hébergée accorde EXECUTE directement à anon/
+-- authenticated à la création (comportement absent du stack CLI local) :
+-- révocation explicite des deux, pas seulement de PUBLIC (corrigé en M4
+-- pour que le fichier de migration reflète le fix déjà appliqué en direct
+-- sur le projet distant en M3 — sinon un redéploiement from scratch depuis
+-- les migrations seules réintroduirait le trou).
+revoke execute on function public.complete_habit(uuid) from public, anon, authenticated;
+revoke execute on function public.xp_to_next_level(int) from public, anon, authenticated;
+revoke execute on function public.rank_for_level(int) from public, anon, authenticated;
 
 grant execute on function public.complete_habit(uuid) to authenticated;
 grant execute on function public.xp_to_next_level(int) to authenticated;
