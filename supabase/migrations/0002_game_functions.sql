@@ -43,6 +43,7 @@ create function public.xp_to_next_level(p_level int)
 returns int
 language sql
 immutable
+set search_path = public
 as $$
   select round(100 * power(p_level, 1.5))::int;
 $$;
@@ -54,6 +55,7 @@ create function public.rank_for_level(p_level int)
 returns hunter_rank
 language sql
 immutable
+set search_path = public
 as $$
   select case
     when p_level >= 50 then 'S'
@@ -204,6 +206,15 @@ begin
   );
 end;
 $$;
+
+-- Postgres accorde EXECUTE à PUBLIC par défaut à la création d'une
+-- fonction : révocation explicite avant le grant ciblé, sinon anon garde
+-- un accès résiduel via PUBLIC en parallèle du grant authenticated
+-- (trouvé en vérifiant le projet distant en M3 — complete_habit se
+-- protège en interne via auth.uid(), mais le grant restait trop large).
+revoke execute on function public.complete_habit(uuid) from public;
+revoke execute on function public.xp_to_next_level(int) from public;
+revoke execute on function public.rank_for_level(int) from public;
 
 grant execute on function public.complete_habit(uuid) to authenticated;
 grant execute on function public.xp_to_next_level(int) to authenticated;
