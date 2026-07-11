@@ -90,10 +90,11 @@ select is(
   0, 'close_day J4: plancher 0 (jamais négatif)'
 );
 
--- Malus visible : 4 jours d'abus -> +1/+1/+1(cap)/+1(cap) = 2 (capé, état 3 = boss M4).
+-- Malus visible : le 3e jour d'abus consécutif fait spawn le Boss (M4), ce
+-- qui fixe l'état à 3 (priorité sur l'échelle 0-2) tant qu'il reste actif.
 select is(
   (select emblem_damage from profiles where id = '55555555-5555-5555-5555-555555555555'),
-  2, 'malus visible: capé à 2 après 4 jours d''abus (état 3 = boss, M4)'
+  3, 'malus visible: état 3 (boss actif, spawné au 3e jour d''abus consécutif, M4)'
 );
 
 -- Streak par habitude reset à 0 après un jour raté.
@@ -104,7 +105,8 @@ select is(
   0, 'streak habitude reset à 0 après jour raté'
 );
 
--- Jour 5 (2026-01-05) : journée parfaite -> malus réparé d'un cran.
+-- Jour 5 (2026-01-05) : journée parfaite -> le Boss encaisse 1 PV (M4) mais
+-- reste actif, donc le malus visible reste fixé à l'état 3.
 insert into habit_logs (habit_id, user_id, date, completed_at, xp_earned, multiplier)
 values ('66666666-6666-6666-6666-666666666666',
         '55555555-5555-5555-5555-555555555555', '2026-01-05',
@@ -117,7 +119,7 @@ select results_eq(
 );
 select is(
   (select emblem_damage from profiles where id = '55555555-5555-5555-5555-555555555555'),
-  1, 'malus visible: réparé d''un cran après journée parfaite (2 -> 1)'
+  3, 'malus visible: reste à l''état 3 (le Boss encaisse 1 PV mais reste actif, M4)'
 );
 
 -- Idempotence : rejouer J1 ne repénalise pas.

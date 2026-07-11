@@ -9,7 +9,7 @@ Habit tracker gamifié style Solo Leveling. PWA Next.js + Supabase + Vercel. Zé
 - DA : `SPEC.md §9` (tokens, composant Fenêtre Système, grammaire des couleurs) + mockups de référence dans `design/mockups/`. Utilise la skill frontend-design. Jamais de Tailwind générique : hexagones, corner brackets, glow violet.
 
 ## Milestone en cours
-> **M3 — Push** (mettre à jour cette ligne à chaque milestone terminé, cf. SPEC §7)
+> **M4 — Meta-game** (mettre à jour cette ligne à chaque milestone terminé, cf. SPEC §7)
 
 Workflow : une branche par milestone (`m0-socle`, `m1-core-loop`…), PR à la fin, on ne commence pas le milestone suivant sans mon GO.
 
