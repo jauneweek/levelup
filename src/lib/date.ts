@@ -38,3 +38,15 @@ export function todayInTimezone(timezone: string): {
 
   return { dateStr, isoWeekday };
 }
+
+/** Date (YYYY-MM-DD) "demain" dans le fuseau du user (rituel du soir, §3.8). */
+export function tomorrowInTimezone(timezone: string): string {
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(tomorrow);
+}
