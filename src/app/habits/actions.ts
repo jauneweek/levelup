@@ -24,6 +24,7 @@ export async function createHabit(formData: FormData) {
   const stat = String(formData.get("stat") ?? "FOR") as StatCode;
   const difficulty = String(formData.get("difficulty") ?? "easy") as Difficulty;
   const deadlineRaw = String(formData.get("deadline_time") ?? "").trim();
+  const minimalVersion = String(formData.get("minimal_version") ?? "").trim();
   const days = parseDays(formData);
 
   if (!name) throw new Error("le nom de la quête est requis");
@@ -34,6 +35,7 @@ export async function createHabit(formData: FormData) {
     stat,
     difficulty,
     deadline_time: deadlineRaw || null,
+    minimal_version: minimalVersion || null,
     schedule: { days: days.length > 0 ? days : [1, 2, 3, 4, 5, 6, 7] },
   });
   if (error) throw new Error(error.message);
@@ -51,6 +53,7 @@ export async function updateHabit(formData: FormData) {
   const stat = String(formData.get("stat") ?? "FOR") as StatCode;
   const difficulty = String(formData.get("difficulty") ?? "easy") as Difficulty;
   const deadlineRaw = String(formData.get("deadline_time") ?? "").trim();
+  const minimalVersion = String(formData.get("minimal_version") ?? "").trim();
   const days = parseDays(formData);
 
   if (!name) throw new Error("le nom de la quête est requis");
@@ -62,6 +65,7 @@ export async function updateHabit(formData: FormData) {
       stat,
       difficulty,
       deadline_time: deadlineRaw || null,
+      minimal_version: minimalVersion || null,
       schedule: { days: days.length > 0 ? days : [1, 2, 3, 4, 5, 6, 7] },
     })
     .eq("id", habitId);
@@ -105,6 +109,19 @@ export async function completeHabit(formData: FormData) {
   if (!habitId) throw new Error("habit_id manquant");
 
   const { error } = await supabase.rpc("complete_habit", {
+    p_habit_id: habitId,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/");
+}
+
+export async function completeHabitExpress(formData: FormData) {
+  const supabase = await createClient();
+  const habitId = String(formData.get("habit_id") ?? "");
+  if (!habitId) throw new Error("habit_id manquant");
+
+  const { error } = await supabase.rpc("complete_habit_express", {
     p_habit_id: habitId,
   });
   if (error) throw new Error(error.message);

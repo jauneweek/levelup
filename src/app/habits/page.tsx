@@ -14,7 +14,7 @@ export default async function HabitsPage() {
 
   const { data: habits } = await supabase
     .from("habits")
-    .select("id, name, stat, difficulty, deadline_time, active, schedule")
+    .select("id, name, stat, difficulty, deadline_time, minimal_version, active, schedule")
     .order("created_at", { ascending: true });
 
   return (

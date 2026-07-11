@@ -12,6 +12,7 @@ type Habit = {
   stat: StatCode;
   difficulty: "easy" | "medium" | "hard";
   deadline_time: string | null;
+  minimal_version: string | null;
   active: boolean;
   schedule: { days: number[] };
 };
@@ -46,6 +47,7 @@ export function HabitRow({ habit }: { habit: Habit }) {
             stat: habit.stat,
             difficulty: habit.difficulty,
             deadline_time: habit.deadline_time,
+            minimal_version: habit.minimal_version,
             days: habit.schedule?.days,
           }}
         />

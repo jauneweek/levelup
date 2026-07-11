@@ -22,6 +22,7 @@ type HabitFormFieldsProps = {
     stat?: StatCode;
     difficulty?: "easy" | "medium" | "hard";
     deadline_time?: string | null;
+    minimal_version?: string | null;
     days?: number[];
   };
   idPrefix: string;
@@ -92,6 +93,19 @@ export function HabitFormFields({ defaultValues, idPrefix }: HabitFormFieldsProp
           name="deadline_time"
           defaultValue={defaultValues?.deadline_time ?? ""}
           className={inputClass}
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label htmlFor={`${idPrefix}-minimal`} className="text-xs text-text-muted">
+          Version minimale (donjon express, optionnel)
+        </label>
+        <input
+          id={`${idPrefix}-minimal`}
+          name="minimal_version"
+          defaultValue={defaultValues?.minimal_version ?? ""}
+          className={inputClass}
+          placeholder="Ex. 2 pages, 5 pompes, 2 min de méditation"
         />
       </div>
 
