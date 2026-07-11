@@ -7,7 +7,7 @@
 begin;
 create extension if not exists pgtap;
 
-select plan(14);
+select plan(15);
 
 -- ============================================================================
 -- interpolate_template
@@ -184,6 +184,40 @@ select is(
    where gdn.user_id = 'c0000000-0000-0000-0000-00000000000c'
      and gdn.habit_id = 'c0000000-0000-0000-0000-0000000000c3'),
   'boss', 'escalade: 2 ignorées aujourd''hui -> persona Boss sur le dernier rappel'
+);
+
+-- Collision : une 4e habitude dont le T-30 PROPRE a aussi été ignoré,
+-- ET le compteur du jour est déjà à 2 -> le Boss doit gagner sur le
+-- système (sinon la règle Boss ne se déclenche quasiment jamais, vu qu'à
+-- T-15 le T-30 de CETTE habitude est presque toujours déjà ignoré).
+-- Bug trouvé en testant M3 sur un vrai iPhone.
+insert into habits (id, user_id, name, stat, difficulty, schedule, deadline_time, created_at)
+values ('c0000000-0000-0000-0000-0000000000c4',
+        'c0000000-0000-0000-0000-00000000000c', 'habit4 (collision)', 'PRO', 'easy',
+        '{"days":[1,2,3,4,5,6,7]}'::jsonb, (now() + interval '13 minutes')::time,
+        now() - interval '8 days');
+
+do $$
+declare d date;
+begin
+  for d in select generate_series(current_date - 6, current_date - 2, interval '1 day')::date
+  loop
+    insert into habit_logs (habit_id, user_id, date, completed_at, xp_earned)
+    values ('c0000000-0000-0000-0000-0000000000c4', 'c0000000-0000-0000-0000-00000000000c',
+            d, d::timestamptz + interval '10 hours', 10);
+  end loop;
+end $$;
+
+select record_notification_sent('c0000000-0000-0000-0000-00000000000c',
+  (select id from notification_templates where trigger_type = 't30' and active limit 1),
+  'c0000000-0000-0000-0000-0000000000c4');
+
+select is(
+  (select nt.persona from get_due_notifications() gdn
+   join notification_templates nt on nt.id = gdn.template_id
+   where gdn.user_id = 'c0000000-0000-0000-0000-00000000000c'
+     and gdn.habit_id = 'c0000000-0000-0000-0000-0000000000c4'),
+  'boss', 'escalade: collision (T-30 propre ignoré + 2 ignorées) -> Boss gagne sur système'
 );
 
 -- ============================================================================

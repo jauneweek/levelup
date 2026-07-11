@@ -284,11 +284,14 @@ begin
       -- Mode slump : uniquement supportive, jamais le Boss.
       v_persona_filter := null;
       v_tone_filter := array['supportive'];
+    elsif v_trigger = 't15' and (v_ctx ->> 'ignored_count_today')::int >= 2 then
+      -- 2 ignorées dans la journée : priorité sur l'escalade "système" d'une
+      -- seule habitude (sinon le Boss ne se déclenche presque jamais, vu
+      -- qu'à T-15 le T-30 de CETTE habitude est quasi toujours déjà ignoré).
+      v_persona_filter := array['boss'];
+      v_tone_filter := null;
     elsif v_trigger = 't15' and v_ignored_t30_here then
       v_persona_filter := array['system'];
-      v_tone_filter := null;
-    elsif v_trigger = 't15' and (v_ctx ->> 'ignored_count_today')::int >= 2 then
-      v_persona_filter := array['boss'];
       v_tone_filter := null;
     else
       v_persona_filter := null;
