@@ -5,6 +5,8 @@ type SystemWindowProps = {
   title?: ReactNode;
   /** Masque le préfixe [SYSTÈME] de l'en-tête si besoin. */
   showSystemTag?: boolean;
+  /** Accent de la fenêtre (bordure, corners, header). Défaut violet. */
+  tone?: "violet" | "danger" | "cyan" | "ghost" | "amber";
   children: ReactNode;
   className?: string;
 };
@@ -17,11 +19,15 @@ type SystemWindowProps = {
 export function SystemWindow({
   title,
   showSystemTag = true,
+  tone = "violet",
   children,
   className = "",
 }: SystemWindowProps) {
   return (
-    <section className={`system-window sw-enter p-6 ${className}`}>
+    <section
+      className={`system-window sw-enter p-6 ${className}`}
+      data-tone={tone === "violet" ? undefined : tone}
+    >
       <span aria-hidden className="sw-corner sw-corner--tl" />
       <span aria-hidden className="sw-corner sw-corner--tr" />
       <span aria-hidden className="sw-corner sw-corner--bl" />
