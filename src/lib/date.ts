@@ -41,12 +41,18 @@ export function todayInTimezone(timezone: string): {
 
 /** Date (YYYY-MM-DD) "demain" dans le fuseau du user (rituel du soir, §3.8). */
 export function tomorrowInTimezone(timezone: string): string {
-  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  return offsetDateInTimezone(timezone, 1);
+}
+
+/** Date (YYYY-MM-DD) décalée de `days` (positif ou négatif) dans le fuseau
+ * du user. Sert au Fantôme J-30 (§3.12). */
+export function offsetDateInTimezone(timezone: string, days: number): string {
+  const shifted = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(tomorrow);
+  }).format(shifted);
 }

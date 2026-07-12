@@ -281,12 +281,14 @@ export default async function Home() {
             </div>
           )}
 
-          <Link
-            href="/habits"
-            className="mt-4 inline-block text-xs text-cyan hover:underline"
-          >
-            Gérer mes quêtes →
-          </Link>
+          <div className="mt-4 flex gap-4">
+            <Link href="/habits" className="text-xs text-cyan hover:underline">
+              Gérer mes quêtes →
+            </Link>
+            <Link href="/profil" className="text-xs text-cyan hover:underline">
+              Profil (Ombres, Fantôme, Journal) →
+            </Link>
+          </div>
         </SystemWindow>
 
         <SystemWindow title="Planifier demain" showSystemTag={false}>
