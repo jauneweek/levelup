@@ -1,12 +1,18 @@
 /**
- * Retour haptique léger sur les interactions.
+ * Retour haptique sur les interactions.
  *
- * ⚠️ Limite réelle à connaître : **iOS/Safari n'implémente PAS l'API Vibration**
- * (`navigator.vibrate`). Ça marche sur Android/Chrome, et c'est un no-op
- * silencieux sur iPhone — y compris en PWA installée. Il n'existe aujourd'hui
- * aucun moyen fiable et standard de déclencher le Taptic Engine depuis le web
- * sur iOS. On garde l'appel (gratuit, dégradation propre) et on compense sur
- * iPhone par le feedback visuel + sonore.
+ * Deux chemins, car il n'existe pas d'API unique :
+ *
+ * 1. **Android / Chrome** → API Vibration standard (`navigator.vibrate`).
+ *
+ * 2. **iOS / Safari** → l'API Vibration N'EXISTE PAS. Mais depuis Safari 17.4,
+ *    le contrôle `<input type="checkbox" switch>` déclenche un vrai retour
+ *    haptique natif quand il bascule. On garde donc un switch invisible dans
+ *    le DOM et on le « clique » par programme : l'iPhone vibre.
+ *    Contraintes : l'élément doit être RENDU (pas `display:none`), et l'appel
+ *    doit se faire dans le contexte d'un geste utilisateur — ce qui est le cas
+ *    (on n'appelle haptic() que depuis des onClick).
+ *    Nécessite aussi que « Vibrations système » soit activé dans les réglages iOS.
  */
 export type HapticKind = "tap" | "success" | "warn";
 
@@ -16,13 +22,46 @@ const PATTERNS: Record<HapticKind, number | number[]> = {
   warn: [30, 40, 30],
 };
 
+let switchEl: HTMLInputElement | null = null;
+
+/** Switch invisible mais RENDU (opacity 0 + hors écran, jamais display:none). */
+function getHapticSwitch(): HTMLInputElement | null {
+  if (typeof document === "undefined") return null;
+  if (switchEl?.isConnected) return switchEl;
+
+  const el = document.createElement("input");
+  el.type = "checkbox";
+  el.setAttribute("switch", ""); // Safari 17.4+ : rend un vrai switch iOS
+  el.setAttribute("aria-hidden", "true");
+  el.tabIndex = -1;
+  el.style.cssText =
+    "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;";
+  document.body.appendChild(el);
+  switchEl = el;
+  return el;
+}
+
 export function haptic(kind: HapticKind = "tap") {
   if (typeof navigator === "undefined") return;
-  const nav = navigator as Navigator & { vibrate?: (p: number | number[]) => boolean };
-  if (typeof nav.vibrate !== "function") return;
+
+  const nav = navigator as Navigator & {
+    vibrate?: (p: number | number[]) => boolean;
+  };
+
+  // Android / Chrome
+  if (typeof nav.vibrate === "function") {
+    try {
+      nav.vibrate(PATTERNS[kind]);
+      return;
+    } catch {
+      /* on tente le fallback */
+    }
+  }
+
+  // iOS / Safari (17.4+)
   try {
-    nav.vibrate(PATTERNS[kind]);
+    getHapticSwitch()?.click();
   } catch {
-    /* no-op */
+    /* no-op : le retour visuel + sonore prend le relais */
   }
 }
