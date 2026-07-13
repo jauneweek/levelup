@@ -6,6 +6,7 @@ import { STAT_LABELS, type StatCode } from "@/lib/xp";
 import { StatIcon } from "@/components/stat-icon";
 import { completeHabit, completeHabitExpress } from "@/app/habits/actions";
 import { completeTodo } from "@/app/todos/actions";
+import { haptic } from "@/lib/haptics";
 
 const REDUCED =
   typeof window !== "undefined" &&
@@ -42,6 +43,7 @@ export function QuestCard({
 
   function run(action: (fd: FormData) => Promise<void>, field: string) {
     if (slashing || done) return;
+    haptic("success");
     setSlashing(true);
     setTimeout(
       () => {

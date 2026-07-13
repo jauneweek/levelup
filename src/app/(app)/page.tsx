@@ -176,10 +176,10 @@ export default async function HubPage() {
       </SystemWindow>
 
       {/* ── Compétences : le radar EST la cible, il ouvre le détail ── */}
-      <SystemWindow title={undefined} tone="cyan" className="!py-4">
+      <SystemWindow title={undefined} tone="cyan" className="!py-5">
         <div className="-mt-4">
           <StatDetailModal stats={statEntries}>
-            <StatRadar levels={levels} size={184} />
+            <StatRadar levels={levels} />
           </StatDetailModal>
         </div>
       </SystemWindow>

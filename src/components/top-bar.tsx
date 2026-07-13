@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { haptic } from "@/lib/haptics";
 
 /** Utilitaires consultés rarement → barre du haut, toujours accessibles, sans
  * occuper un slot d'onglet au pouce (les onglets du bas restent réservés aux
@@ -59,6 +60,7 @@ export function TopBar() {
               aria-label={it.label}
               title={it.label}
               aria-current={active ? "page" : undefined}
+              onClick={() => haptic("tap")}
               className="topbar__icon focus-ring"
             >
               <svg viewBox="0 0 24 24" aria-hidden>

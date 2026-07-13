@@ -6,6 +6,7 @@ import { QuestCard } from "@/components/quest-card";
 import { Pips } from "@/components/pips";
 import { HabitModal, type EditableHabit } from "@/components/habit-modal";
 import { DIFFICULTY_XP, STAT_LABELS, type StatCode } from "@/lib/xp";
+import { haptic } from "@/lib/haptics";
 
 const STAT_ORDER: StatCode[] = ["FOR", "INT", "SAG", "PRO", "END"];
 
@@ -74,7 +75,10 @@ export function QuestsView({
               type="button"
               role="tab"
               aria-selected={on}
-              onClick={() => setSeg(s.key)}
+              onClick={() => {
+                haptic("tap");
+                setSeg(s.key);
+              }}
               className={`focus-ring clip-hex-wide flex-1 py-2 text-center font-display text-xs uppercase tracking-widest transition-colors ${
                 on
                   ? "border border-violet bg-violet/25 text-text-primary"
@@ -87,28 +91,26 @@ export function QuestsView({
         })}
       </div>
 
-      {/* Arcs = filtre par stat (on les a déjà : les 5 domaines de vie) */}
+      {/* Arc = filtre par domaine, en menu déroulant */}
       {seg === "jour" && (
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrer par domaine">
-          {(["ALL", ...STAT_ORDER] as const).map((a) => {
-            const on = a === arc;
-            return (
-              <button
-                key={a}
-                type="button"
-                aria-pressed={on}
-                onClick={() => setArc(a)}
-                className={`focus-ring rounded-full border px-3 py-1 text-[11px] transition-colors ${
-                  on
-                    ? "border-cyan bg-cyan/15 text-cyan"
-                    : "border-border-glow/60 text-text-muted hover:text-text-primary"
-                }`}
-              >
-                {a === "ALL" ? "Toutes" : STAT_LABELS[a]}
-              </button>
-            );
-          })}
-        </div>
+        <label className="block">
+          <span className="sr-only">Filtrer par arc</span>
+          <select
+            className="sys-select"
+            value={arc}
+            onChange={(e) => {
+              haptic("tap");
+              setArc(e.target.value as StatCode | "ALL");
+            }}
+          >
+            <option value="ALL">Tous les arcs</option>
+            {STAT_ORDER.map((s) => (
+              <option key={s} value={s}>
+                {STAT_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
 
       {/* ── Quotidiennes ── */}
@@ -132,7 +134,10 @@ export function QuestsView({
                     done={false}
                     deadline={q.deadline_time ? q.deadline_time.slice(0, 5) : null}
                     express={q.minimal_version}
-                    onEdit={() => setModal({ habit: q })}
+                    onEdit={() => {
+                      haptic("tap");
+                      setModal({ habit: q });
+                    }}
                   />
                 ) : (
                   <QuestCard
@@ -157,7 +162,10 @@ export function QuestsView({
                     xp={DIFFICULTY_XP[q.difficulty]}
                     done
                     deadline={q.deadline_time ? q.deadline_time.slice(0, 5) : null}
-                    onEdit={() => setModal({ habit: q })}
+                    onEdit={() => {
+                      haptic("tap");
+                      setModal({ habit: q });
+                    }}
                   />
                 ) : (
                   <QuestCard
@@ -244,7 +252,10 @@ export function QuestsView({
       {/* FAB — création de quête */}
       <button
         type="button"
-        onClick={() => setModal({})}
+        onClick={() => {
+          haptic("tap");
+          setModal({});
+        }}
         className="fab"
         aria-label="Nouvelle quête"
       >
