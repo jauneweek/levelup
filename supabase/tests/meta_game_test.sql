@@ -378,21 +378,21 @@ reset role;
 
 -- Heure de rush : x2 si avant midi, sinon tarif normal — non déterministe
 -- (dépend de l'heure réelle d'exécution des tests), on vérifie juste que
--- l'habitude ciblée ne dépasse jamais son cas nominal (25) ou doublé (50).
+-- l'habitude ciblée ne dépasse jamais son cas nominal (250) ou doublé (500).
 select ok(
   (select xp_earned from habit_logs
-   where habit_id = 'caaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' and date = current_date) in (25, 50),
-  'événement rush: XP = base (25) ou doublé (50) selon l''heure réelle'
+   where habit_id = 'caaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' and date = current_date) in (250, 500),
+  'événement rush: XP = base (250) ou doublé (500) selon l''heure réelle'
 );
 select is(
   (select xp_earned from habit_logs
    where habit_id = 'cbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' and date = current_date),
-  10, 'habitude non ciblée par le rush, pas la dernière du jour: XP normal (10)'
+  100, 'habitude non ciblée par le rush, pas la dernière du jour: XP normal (100)'
 );
 select is(
   (select xp_earned from habit_logs
    where habit_id = 'ccccccc0-cccc-cccc-cccc-cccccccccccc' and date = current_date),
-  30, 'Potion + bonus journée parfaite: x1.5*2=x3 sur la dernière habitude (10*3=30)'
+  300, 'Potion + bonus journée parfaite: x1.5*2=x3 sur la dernière habitude (100*3=300)'
 );
 select is(
   (select resolved from events_log
@@ -443,7 +443,7 @@ select results_eq(
 select is(
   (select current_xp from user_stats
    where user_id = 'cd000001-0000-0000-0000-000000000001' and stat = 'FOR'),
-  980, 'jour maudit: pénalité = 25*0.4*2 = 20 déduits (1000 -> 980)'
+  800, 'jour maudit: pénalité = 250*0.4*2 = 200 déduits (1000 -> 800)'
 );
 
 -- ============================================================================
@@ -476,7 +476,7 @@ reset role;
 select is(
   (select xp_earned from habit_logs
    where habit_id = 'cf000002-0000-0000-0000-000000000002' and date = current_date),
-  20, 'quête secrète xp_double: 10*2=20 (habitude non-dernière, pas de bonus journée parfaite)'
+  200, 'quête secrète xp_double: 100*2=200 (habitude non-dernière, pas de bonus journée parfaite)'
 );
 select is(
   (select revealed from secret_quests
@@ -601,7 +601,7 @@ select is(
 select is(
   (select current_xp from user_stats
    where user_id = 'ce900001-0000-0000-0000-000000000001' and stat = 'FOR'),
-  10, 'récompense quête hebdo: reliquat 10 XP après le niveau 2 (110 - 100)'
+  100, 'récompense quête hebdo: reliquat 100 XP après le niveau 2 (200 - 100)'
 );
 select is(
   (select progress from quests

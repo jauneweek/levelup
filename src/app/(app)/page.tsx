@@ -6,13 +6,18 @@ import { SystemWindow } from "@/components/system-window";
 import { StatRadar } from "@/components/stat-radar";
 import { StatDetailModal, type StatEntry } from "@/components/stat-detail-modal";
 import { RankBadge, DAMAGE_LABEL } from "@/components/rank-badge";
-import { xpToNextLevel, type StatCode } from "@/lib/xp";
+import {
+  hunterLevelInRank,
+  hunterXpToNext,
+  xpToNextLevel,
+  type HunterRank,
+  type StatCode,
+} from "@/lib/xp";
 import { getDayState } from "@/lib/quests";
 import { buildSystemMessage } from "@/lib/system-message";
 import { offsetDateInTimezone } from "@/lib/date";
 
 const STAT_ORDER: StatCode[] = ["FOR", "INT", "SAG", "PRO", "END"];
-type HunterRank = "E" | "D" | "C" | "B" | "A" | "S";
 
 /** Score global = total d'XP cumulée sur les 5 stats (mockup « SCORE GLOBAL »). */
 function cumulativeXp(level: number, currentXp: number): number {
@@ -48,7 +53,9 @@ export default async function HubPage() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("username, rank, global_level, emblem_damage, consecutive_abuse_days")
+      .select(
+        "username, rank, global_level, hunter_level, hunter_xp, emblem_damage, consecutive_abuse_days",
+      )
       .eq("id", user.id)
       .maybeSingle(),
     supabase.from("user_stats").select("stat, level, current_xp").eq("user_id", user.id),
@@ -83,16 +90,20 @@ export default async function HubPage() {
 
   const rank = (profile?.rank ?? "E") as HunterRank;
   const globalLevel = profile?.global_level ?? 1;
+
+  /* Le Hub affiche le NIVEAU DU CHASSEUR, pas la moyenne des stats.
+     L'ancienne moyenne exigeait de monter les 5 stats pour bouger d'un cran :
+     on restait niveau 1 pendant des semaines. Le Chasseur, lui, monte dès la
+     première quête. La moyenne des stats survit dans `globalLevel` — elle sert
+     au Fantôme (comparaison J-30), pas à l'affichage principal. */
+  const hunterLevel = profile?.hunter_level ?? 1;
+  const hunterXp = profile?.hunter_xp ?? 0;
+  const hunterNeeded = hunterXpToNext(hunterLevel);
+  const hunterPct = Math.min(100, Math.round((hunterXp / hunterNeeded) * 100));
   const emblemDamage = profile?.emblem_damage ?? 0;
 
-  const aggPct = Math.round(
-    (STAT_ORDER.reduce(
-      (sum, c) => sum + statEntries[c].current_xp / xpToNextLevel(statEntries[c].level),
-      0,
-    ) /
-      STAT_ORDER.length) *
-      100,
-  );
+  // (L'ancienne barre d'XP moyennait l'avancement des 5 stats. Elle est
+  //  remplacée par celle du Chasseur : c'est elle qui bouge à chaque quête.)
   const score = STAT_ORDER.reduce(
     (sum, c) => sum + cumulativeXp(statEntries[c].level, statEntries[c].current_xp),
     0,
@@ -147,15 +158,18 @@ export default async function HubPage() {
           </p>
         </div>
 
-        {/* Niveau À CÔTÉ de la barre d'XP (mockup) */}
+        {/* Niveau du Chasseur, à CÔTÉ de la barre d'XP (mockup).
+            1 à 100 dans le rang courant : au 100e, on change de rang. */}
         <div className="mt-4 flex items-center gap-3">
           <span className="font-display shrink-0 text-lg leading-none text-text-primary">
-            NIV. {globalLevel}
+            NIV. {hunterLevelInRank(hunterLevel)}
           </span>
           <div className="xp-track flex-1">
-            <div className="xp-fill" style={{ width: `${aggPct}%` }} />
+            <div className="xp-fill" style={{ width: `${hunterPct}%` }} />
           </div>
-          <span className="font-display shrink-0 text-xs tabular-nums text-cyan">{aggPct}%</span>
+          <span className="font-display shrink-0 text-xs tabular-nums text-cyan">
+            {hunterXp}/{hunterNeeded}
+          </span>
         </div>
 
         <div className="mt-2.5 flex items-center justify-between text-xs text-text-muted">

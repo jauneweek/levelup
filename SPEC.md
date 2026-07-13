@@ -43,31 +43,55 @@ Un habit tracker où la vie est un MMO RPG : chaque habitude est une quête, cha
 
 Chaque habitude est rattachée à **une** stat.
 
-### 3.2 XP
+### 3.2 XP (amendement Économie — remplace l'échelle 10/25/50)
 
-- Difficulté d'une habitude : **Facile +10 XP / Moyenne +25 XP / Difficile +50 XP**
+- Difficulté d'une quête : **Facile +100 XP / Moyenne +250 XP / Difficile +500 XP**
 - Complétion avant l'heure limite → XP complet sur la stat
-- Non-complétion à minuit → **pénalité = 40% de l'XP de l'habitude**, retirée à la stat (plancher 0, on ne descend jamais de niveau)
+- Non-complétion à la clôture → **pénalité = 40% de l'XP de la quête**, retirée à la stat (plancher 0, on ne descend jamais de niveau)
 - Multiplicateurs (cumulatifs, cap ×3) :
-  - Journée parfaite (100% des habitudes) : **×1.5 sur la dernière habitude complétée**
+  - Journée parfaite (100% du dû du jour) : **×1.5 sur la dernière quête complétée**
   - Potion d'Énergie active : **×2 sur toute la journée**
-  - Streak ≥ 21 j sur l'habitude : **×1.2 permanent**
+  - Streak ≥ 21 j sur la quête : **×1.2 permanent**
 
-### 3.3 Niveaux & Rangs
+### 3.3 Niveaux & Rangs (amendement Économie)
 
-- XP requis pour passer une stat au niveau N : `100 × N^1.5` (arrondi)
+**Deux pistes distinctes, et c'est tout le propos.**
+
+#### 3.3.1 Le RADAR — la capacité (XP absolue)
+
+- Les 5 stats. XP requis pour passer une stat au niveau N : `100 × N^1.5` (arrondi)
   - Niv 1→2 : 100 XP · 2→3 : 283 · 5→6 : 1 118 · 10→11 : 3 162
-- **Niveau global** = moyenne des 5 niveaux de stats (arrondi bas)
-- **Rang du Chasseur** selon niveau global :
+- **Ne se réinitialise JAMAIS** : c'est le miroir de la vraie vie.
+- Dix quêtes difficiles par jour font un grand radar, trois faciles un petit. La capacité n'est **pas** normalisée — elle *doit* dépendre du volume et de la difficulté.
+- `global_level` (moyenne des 5 stats) survit comme résumé du radar. Il alimente le Fantôme (§3.12) et le Journal — **il ne détermine plus le rang**.
 
-| Rang | Niveau global |
-|---|---|
-| E | 1–4 |
-| D | 5–9 |
-| C | 10–19 |
-| B | 20–34 |
-| A | 35–49 |
-| **S** | 50+ |
+#### 3.3.2 Le CHASSEUR — la discipline (XP normalisée)
+
+> **XP du Chasseur = 1000 × (XP de base de la quête ÷ dû quotidien total)**
+
+- Le **dû quotidien** ramène tout au jour : un quota `weekly ×3` de difficulté « difficile » pèse `3 × 500 / 7 = 214` XP par jour. Une quête `once` en est exclue (elle n'a pas de rythme) — la valider est donc un bonus net.
+- **Une journée pleine vaut 1000 points, que le Chasseur ait 3 quêtes ou 10.** Sans cette normalisation, celui qui en fait 10 atteindrait le rang max en 3 mois et celui qui en fait 3 en mettrait 20 : le rang ne voudrait plus rien dire.
+- On part de l'XP **de base**, pas de l'XP gagnée : les multiplicateurs (journée parfaite, série, quête secrète, Ombres) gonflent la *capacité*, jamais le *rang*. Le rang reste une horloge.
+- Le donjon express (§3.10) donne **la moitié** du crédit : il sauve la journée, il ne l'achète pas.
+
+**Coût d'un niveau du Chasseur : `100 + 1,3 × (niveau − 1)`.**
+Le premier coûte **100** — soit un dixième d'une journée : on monte de niveau dès sa première quête.
+
+**100 niveaux par rang.** Au 100e, on passe au rang suivant et le compteur repart à 1 : c'est une **promotion, jamais une perte** (§8).
+
+| Rang | Niveau du Chasseur | Durée à la traversée |
+|---|---|---|
+| E | 1–100 | ~2,5 semaines |
+| D | 101–200 | ~4 semaines |
+| C | 201–300 | ~6 semaines |
+| B | 301–400 | ~8 semaines |
+| A | 401–500 | ~10 semaines |
+| **S** | 501–600 | ~11,5 semaines |
+| **Monarque** | 601+ | **atteint à ~9,5 mois** |
+
+Total : ~293 000 XP de Chasseur. Le début est jubilatoire, la fin se mérite.
+
+⚠️ **Les pénalités ne touchent JAMAIS l'XP du Chasseur** (§8). Une journée ratée ne retire rien — elle ne rapporte simplement rien. Le coût, c'est le temps perdu. Les pénalités continuent de mordre les stats, donc le radar.
 
 Le passage de rang = moment épique (plein écran, animation "Système").
 

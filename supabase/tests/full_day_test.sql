@@ -46,18 +46,18 @@ set local role authenticated;
 
 select results_eq(
   $$ select (complete_habit('da222222-2222-2222-2222-222222222222')->>'xp_earned')::int $$,
-  $$ values (10) $$,
-  'complete_habit: 1ère des 3 quêtes du jour (2 habitudes + 1 todo) -> XP normal (10)'
+  $$ values (100) $$,
+  'complete_habit: 1ère des 3 quêtes du jour (2 habitudes + 1 todo) -> XP normal (100)'
 );
 select results_eq(
   $$ select (complete_habit('da222223-2222-2222-2222-222222222223')->>'xp_earned')::int $$,
-  $$ values (10) $$,
-  'complete_habit: 2e des 3 quêtes du jour -> XP normal (10), pas encore la dernière'
+  $$ values (100) $$,
+  'complete_habit: 2e des 3 quêtes du jour -> XP normal (100), pas encore la dernière'
 );
 select results_eq(
   $$ select (complete_todo('da333333-3333-3333-3333-333333333333')->>'xp_earned')::int $$,
-  $$ values (30) $$,
-  'complete_todo: dernière des 3 -> secret x2 * bonus journée parfaite x1.5 = x3, cap ok (10*3=30)'
+  $$ values (300) $$,
+  'complete_todo: dernière des 3 -> secret x2 * bonus journée parfaite x1.5 = x3, cap ok (100*3=300)'
 );
 select results_eq(
   $$ select complete_todo('da333333-3333-3333-3333-333333333333')->>'already_completed' $$,
@@ -165,13 +165,13 @@ set local role authenticated;
 
 select results_eq(
   $$ select (complete_habit_express('dc222222-2222-2222-2222-222222222222')->>'xp_earned')::int $$,
-  $$ values (5) $$,
-  'donjon express: 50% de l''XP (10*0.5=5)'
+  $$ values (50) $$,
+  'donjon express: 50% de l''XP (100*0.5=50)'
 );
 select results_eq(
   $$ select (complete_habit_express('dc333333-3333-3333-3333-333333333333')->>'xp_earned')::int $$,
-  $$ values (5) $$,
-  'donjon express: 2e complétion express de la journée (5 XP)'
+  $$ values (50) $$,
+  'donjon express: 2e complétion express de la journée (50 XP)'
 );
 select results_eq(
   $$ select complete_habit_express('dc444444-4444-4444-4444-444444444444')->>'express_limit_reached' $$,
@@ -232,12 +232,12 @@ select results_eq(
 select is(
   (select xp_earned from todos
    where user_id = 'dd111111-1111-1111-1111-111111111111' and date = '2026-01-01'),
-  -4, 'close_day: todo ratée pénalisée (10*0.4*1 = 4, stocké en négatif)'
+  -40, 'close_day: todo ratée pénalisée (100*0.4*1 = 40, stocké en négatif)'
 );
 select is(
   (select current_xp from user_stats
    where user_id = 'dd111111-1111-1111-1111-111111111111' and stat = 'INT'),
-  96, 'close_day: XP de la stat de la todo déduite (100 -> 96)'
+  60, 'close_day: XP de la stat de la todo déduite (100 -> 60)'
 );
 
 -- Jour 2 : habitude faite, todo faite -> journée parfaite grâce à la todo.

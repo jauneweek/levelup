@@ -148,8 +148,8 @@ set local role authenticated;
 select results_eq(
   $$ select (j->>'xp_earned')::int, (j->>'shadow_bonus')::numeric
      from (select complete_habit('eb222227-2222-2222-2222-222222222227') as j) s $$,
-  $$ values (11, 1.10::numeric) $$,
-  'complete_habit: 10 XP * bonus Ombres 1.10 = 11, hors du cap x3'
+  $$ values (110, 1.10::numeric) $$,
+  'complete_habit: 100 XP * bonus Ombres 1.10 = 110, hors du cap x3'
 );
 
 reset role;

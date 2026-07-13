@@ -6,6 +6,8 @@
 --   2. l'idempotence de la clôture de période (un cron rejoué ne double pas la peine)
 --   3. le quota > 1 (le streak ne doit pas monter 3× en une journée)
 -- ============================================================================
+create extension if not exists pgtap;
+
 begin;
 select plan(24);
 
@@ -164,7 +166,7 @@ select is(
 select is(
   (select current_xp from user_stats
    where user_id = 'd8c00000-0000-0000-0000-00000000000c' and stat = 'FOR'),
-  960, 'clôture hebdo : pénalité = 50 * 0.4 * 2 manquants = 40 (1000 -> 960)'
+  600, 'clôture hebdo : pénalité = 500 * 0.4 * 2 manquants = 400 (1000 -> 600)'
 );
 
 -- Idempotence RÉELLE : on retire le verrou du snapshot pour forcer close_day à
@@ -176,7 +178,7 @@ select close_day('d8c00000-0000-0000-0000-00000000000c', '2026-01-11');
 select is(
   (select current_xp from user_stats
    where user_id = 'd8c00000-0000-0000-0000-00000000000c' and stat = 'FOR'),
-  960, 'clôture hebdo rejouée : la pénalité n''est PAS appliquée deux fois'
+  600, 'clôture hebdo rejouée : la pénalité n''est PAS appliquée deux fois'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
@@ -249,12 +251,10 @@ values ('d8f00000-0000-0000-0000-0000000000ff',
         'd8f00000-0000-0000-0000-00000000000f', 'séries', 'FOR', 'hard',
         'daily', 3, now() - interval '30 days');
 
--- XP de départ basse À DESSEIN : à 1000 XP, les 50 gagnés déclencheraient la
--- boucle de montée de niveau (seuil 100 puis 283…), qui consomme l'XP et rendrait
--- le calcul de la pénalité illisible. Ici 40 + 50 = 90 < 100 : aucun niveau ne
--- passe, et il ne reste que ce qu'on veut mesurer.
-update user_stats set current_xp = 40
-  where user_id = 'd8f00000-0000-0000-0000-00000000000f' and stat = 'FOR';
+-- On ne lit PAS `user_stats.current_xp` ici : gagner 500 XP franchit deux seuils
+-- de niveau (100 puis 283), et le reliquat mélangerait la montée de niveau avec la
+-- pénalité. La ligne de journal, elle, porte exactement le solde du jour :
+-- XP gagnée moins pénalité. C'est ça qu'on veut mesurer.
 
 -- 6 journées pleines derrière soi : on teste la pénalité, pas le mode slump
 -- (qui désactiverait le multiplicateur et brouillerait la lecture).
@@ -272,9 +272,9 @@ reset role;
 
 select close_day('d8f00000-0000-0000-0000-00000000000f', current_date);
 select is(
-  (select current_xp from user_stats
-   where user_id = 'd8f00000-0000-0000-0000-00000000000f' and stat = 'FOR'),
-  50, 'pénalité journalière : 40 + 50 gagnés - (50 * 0.4 * 2 manquants) = 50'
+  (select xp_earned from habit_logs
+   where habit_id = 'd8f00000-0000-0000-0000-0000000000ff' and date = current_date),
+  100, 'pénalité journalière proportionnelle : 500 gagnés - (500 * 0.4 * 2 manquants) = 100'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
@@ -309,7 +309,7 @@ select close_day('d8909000-0000-0000-0000-000000000090', '2026-01-11');
 select is(
   (select current_xp from user_stats
    where user_id = 'd8909000-0000-0000-0000-000000000090' and stat = 'FOR'),
-  960, 'clôture : seule la période NON jugée est pénalisée (1000 - 40, pas - 80)'
+  600, 'clôture : seule la période NON jugée est pénalisée (1000 - 400, pas - 800)'
 );
 
 select * from finish();

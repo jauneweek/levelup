@@ -46,8 +46,8 @@ values ('dddddddd-dddd-dddd-dddd-dddddddddddd',
 -- 1er check-in : XP complet, pas de multiplicateur (streak = 1).
 select results_eq(
   $$ select (complete_habit('44444444-4444-4444-4444-444444444444')->>'xp_earned')::int $$,
-  $$ values (50) $$,
-  'complete_habit: 50 XP pour une habitude "hard" au 1er jour'
+  $$ values (500) $$,
+  'complete_habit: 500 XP pour une habitude "hard" au 1er jour'
 );
 
 -- 2e appel le même jour : idempotent, pas de double XP.
@@ -60,7 +60,7 @@ select results_eq(
 select is(
   (select current_xp from user_stats
    where user_id = '33333333-3333-3333-3333-333333333333' and stat = 'FOR'),
-  50, 'user_stats.current_xp = 50 après un seul crédit (pas de double XP)'
+  117, 'un seul crédit (pas de double XP) : 500 XP franchit les seuils 100 puis 283, reste 117'
 );
 
 -- Simule 20 jours de streak consécutifs (backdate) pour atteindre le palier
@@ -78,20 +78,20 @@ set local role authenticated;
 
 select results_eq(
   $$ select (complete_habit('44444444-4444-4444-4444-444444444444')->>'xp_earned')::int $$,
-  $$ values (60) $$,
-  'complete_habit: streak >= 21 -> x1.2 (50 * 1.2 = 60)'
+  $$ values (600) $$,
+  'complete_habit: streak >= 21 -> x1.2 (500 * 1.2 = 600)'
 );
 
--- Level-up : XP total sur FOR = 50 + 60 = 110 >= seuil niv1->2 (100).
+-- Level-up : 117 (reste du 1er crédit) + 600 = 717 >= seuil niv3->4 (520).
 select is(
   (select level from user_stats
    where user_id = '33333333-3333-3333-3333-333333333333' and stat = 'FOR'),
-  2, 'level-up: niveau 2 atteint (110 XP >= seuil 100)'
+  4, 'level-up: niveau 4 atteint (la nouvelle échelle fait sauter plusieurs paliers)'
 );
 select is(
   (select current_xp from user_stats
    where user_id = '33333333-3333-3333-3333-333333333333' and stat = 'FOR'),
-  10, 'level-up: reliquat 10 XP après passage niveau 2 (110 - 100)'
+  197, 'level-up: reliquat 197 XP après le niveau 4 (717 - 520)'
 );
 
 -- --- Durcissement RLS : le client ne peut plus écrire directement ---

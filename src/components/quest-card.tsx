@@ -87,9 +87,10 @@ export function QuestCard({
         startTransition(async () => {
           try {
             const res = await action(fd);
-            // La fanfare arrive après le slash : elle se lit comme la
-            // conséquence du check, pas comme un son concurrent.
-            if (res?.leveledUp) playLevelUp(res.statLevel);
+            // La fanfare célèbre le CHASSEUR (la discipline), pas la stat : une
+            // stat qui monte est fréquent et discret, un niveau de Chasseur est
+            // l'événement. Un palier rond (10, 20, 30…) a sa propre fanfare.
+            if (res?.hunterLeveledUp) playLevelUp(res.hunterLevelInRank);
             router.refresh();
           } catch {
             haptic("warn");

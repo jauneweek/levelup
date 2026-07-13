@@ -1,8 +1,9 @@
-type HunterRank = "E" | "D" | "C" | "B" | "A" | "S";
+import type { HunterRank } from "@/lib/xp";
 
 type Tone = { ring: string; glow: string; text: string; bg: string };
 
-/** Teinte par rang (SPEC §3.3) : la progression E→S réchauffe le glow, S vire à l'or. */
+/** Teinte par rang (SPEC §3.3) : la progression E→S réchauffe le glow, S vire à
+ *  l'or — et le Monarque, lui, ne brille plus : il est blanc. */
 const RANK_TONE: Record<HunterRank, Tone> = {
   E: { ring: "rgba(139,138,163,0.7)", glow: "rgba(139,138,163,0.4)", text: "#c9c8db", bg: "rgba(139,138,163,0.1)" },
   D: { ring: "rgba(34,211,238,0.6)", glow: "rgba(34,211,238,0.4)", text: "#22d3ee", bg: "rgba(34,211,238,0.1)" },
@@ -10,6 +11,7 @@ const RANK_TONE: Record<HunterRank, Tone> = {
   B: { ring: "rgba(124,58,237,0.75)", glow: "rgba(124,58,237,0.55)", text: "#b794f6", bg: "rgba(124,58,237,0.14)" },
   A: { ring: "rgba(157,92,255,0.85)", glow: "rgba(157,92,255,0.65)", text: "#c9a4ff", bg: "rgba(124,58,237,0.18)" },
   S: { ring: "rgba(245,158,11,0.9)", glow: "rgba(245,158,11,0.7)", text: "#fbbf24", bg: "rgba(245,158,11,0.16)" },
+  M: { ring: "rgba(255,255,255,0.95)", glow: "rgba(233,213,255,0.8)", text: "#ffffff", bg: "rgba(255,255,255,0.14)" },
 };
 
 /** Malus visible (SPEC §3.16) : à partir de l'état 2 l'aura vire au gris, à

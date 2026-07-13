@@ -21,7 +21,7 @@ values ('66666666-6666-6666-6666-666666666666',
 
 -- current_xp de départ suffisamment haut pour observer la progression, puis
 -- suffisamment bas pour tester le plancher 0 au 4e jour d'abus.
-update user_stats set current_xp = 100
+update user_stats set current_xp = 1000
   where user_id = '55555555-5555-5555-5555-555555555555' and stat = 'FOR';
 
 -- Padding : Dec25-31 complétées (7 jours) pour garder completion_rate_7d
@@ -46,7 +46,7 @@ select results_eq(
 select is(
   (select current_xp from user_stats
    where user_id = '55555555-5555-5555-5555-555555555555' and stat = 'FOR'),
-  80, 'close_day J1: 100 - (50*0.4*1) = 80'
+  800, 'close_day J1: 1000 - (500*0.4*1) = 800'
 );
 
 -- Jour 2 d'abus consécutif (2026-01-02) : x1.5.
@@ -58,7 +58,7 @@ select results_eq(
 select is(
   (select current_xp from user_stats
    where user_id = '55555555-5555-5555-5555-555555555555' and stat = 'FOR'),
-  50, 'close_day J2: 80 - (50*0.4*1.5) = 50'
+  500, 'close_day J2: 800 - (500*0.4*1.5) = 500'
 );
 
 -- Jour 3 d'abus consécutif (2026-01-03) : x2.
@@ -70,14 +70,14 @@ select results_eq(
 select is(
   (select current_xp from user_stats
    where user_id = '55555555-5555-5555-5555-555555555555' and stat = 'FOR'),
-  10, 'close_day J3: 50 - (50*0.4*2) = 10'
+  100, 'close_day J3: 500 - (500*0.4*2) = 100'
 );
 
 -- Jour 4 (2026-01-04) : x2 toujours (cap), plancher 0 (10 - 40 < 0).
 select is(
   (select current_xp from user_stats
    where user_id = '55555555-5555-5555-5555-555555555555' and stat = 'FOR'),
-  10, 'sanity: xp = 10 avant J4'
+  100, 'sanity: xp = 100 avant J4'
 );
 select results_eq(
   $$ select (close_day('55555555-5555-5555-5555-555555555555','2026-01-04')->>'penalty_multiplier')::numeric $$,
@@ -213,15 +213,15 @@ set local role authenticated;
 -- 1ère des 2 habitudes du jour : pas encore la dernière, XP plein sans bonus.
 select results_eq(
   $$ select (complete_habit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')->>'xp_earned')::int $$,
-  $$ values (10) $$,
+  $$ values (100) $$,
   'complete_habit: 1ère habitude du jour, pas de bonus journée parfaite'
 );
 
 -- 2e et dernière habitude du jour : bonus x1.5 (journée parfaite).
 select results_eq(
   $$ select (complete_habit('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')->>'xp_earned')::int $$,
-  $$ values (38) $$,
-  'complete_habit: dernière habitude du jour -> bonus x1.5 (25*1.5=37.5 arrondi 38)'
+  $$ values (375) $$,
+  'complete_habit: dernière habitude du jour -> bonus x1.5 (250*1.5=375)'
 );
 
 reset role;

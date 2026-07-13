@@ -15,9 +15,19 @@ Habit tracker gamifié style Solo Leveling. PWA Next.js + Supabase + Vercel. Zé
 >
 > Avant : **M7 — Polish** Fait : nav 4 onglets, 1ère passe de fidélité mockups, fix safe-area iOS, **perf** (région Vercel, loading.tsx, dédup auth), **sound design** (Web Audio, 13 clips). **Restent** : animations plein écran rank-up / extraction d'Ombre, onboarding complet.
 
-## Décisions de game design prises (à spécifier le jour où on les construit)
-- **Rangs = prestige à 100 niveaux.** Chaque rang contient 100 niveaux ; au 100e on passe au rang suivant et le niveau repart à 1. ⚠️ Conséquence à ne pas rater : le niveau global est aujourd'hui la *moyenne des 5 stats*, et monter une stat au niveau 100 coûte ~3,9 M d'XP — un rang à 100 niveaux impose donc un **compteur d'XP du Chasseur séparé**, avec sa propre courbe. **Les 5 stats ne se réinitialisent JAMAIS** (miroir de la vraie vie + §8) ; seul le Niveau du Chasseur repart à zéro, et un rang qui monte est une promotion, jamais une perte.
-- Reporté par le user : boss, cosmétiques, personnage, donjons. Priorité = constance dans les habitudes + gamification.
+## Économie — la règle à ne jamais casser
+> **FAIT** (migrations `0009` + `0010`, validé par le user). SPEC §3.2 + §3.3 amendés. 227 assertions pgTAP vertes.
+
+- **Deux pistes, et ne JAMAIS les confondre :**
+  - Le **RADAR** (5 stats) = la **capacité**. XP absolue (100/250/500). Doit dépendre du volume et de la difficulté. Ne se réinitialise jamais.
+  - Le **CHASSEUR** (niveau + rang) = la **discipline**. XP **normalisée** : `1000 × (XP de base ÷ dû quotidien)`. Une journée pleine vaut 1000 points **que le Chasseur ait 3 quêtes ou 10**.
+- ⚠️ **Si tu casses la normalisation, tu casses le jeu** : celui qui fait 10 quêtes atteindrait Monarque en 3 mois et celui qui en fait 3 en mettrait 20. Le test `economie_test.sql` verrouille ça (3 profils, ~1000 XP chacun).
+- ⚠️ **`grant_hunter_xp` prend l'XP de BASE, jamais l'XP gagnée.** Les multiplicateurs gonflent le radar, jamais le rang — sinon la promesse « Monarque à 9,5 mois » ne tient plus.
+- ⚠️ **Les pénalités ne touchent jamais la piste du Chasseur** (§8). Une journée ratée ne rapporte rien ; elle ne retire rien.
+- `base_xp(difficulty)` est la **source unique** de l'échelle. Ne jamais recopier `when 'easy' then 100` ailleurs (c'était le cas dans 6 fonctions).
+
+## Décisions de game design prises (à construire plus tard)
+- Reporté par le user : boss, cosmétiques, personnage, donjons. Priorité = **constance dans les habitudes + gamification**, puis **gros chantier UI/UX**, puis **muscu**. Le reste : `ROADMAP.md`.
 
 Workflow : une branche par milestone (`m0-socle`, `m1-core-loop`…), PR à la fin, on ne commence pas le milestone suivant sans mon GO.
 
