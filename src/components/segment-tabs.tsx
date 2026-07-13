@@ -5,9 +5,8 @@ import { useState, type ReactNode } from "react";
 type Segment = { key: string; label: string };
 
 /**
- * Basculeur segmenté (hexagones allongés, DA §9.2). Les panneaux sont
- * rendus côté serveur et passés en props ; ce composant ne gère que
- * l'affichage de l'onglet actif — zéro requête client.
+ * Basculeur segmenté (hexagones allongés, DA §9.2). Les panneaux sont rendus
+ * côté serveur et passés en props ; ce composant ne gère que l'onglet actif.
  */
 export function SegmentTabs({
   segments,

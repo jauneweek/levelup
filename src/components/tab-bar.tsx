@@ -35,16 +35,6 @@ const TABS: Tab[] = [
       </>
     ),
   },
-  {
-    href: "/profil",
-    label: "Profil",
-    icon: (
-      <>
-        <circle cx="12" cy="8" r="3.6" />
-        <path d="M5 20 C5 15.5 8.5 13.5 12 13.5 C15.5 13.5 19 15.5 19 20" />
-      </>
-    ),
-  },
 ];
 
 export function TabBar({ pendingCount = 0 }: { pendingCount?: number }) {

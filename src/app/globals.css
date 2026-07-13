@@ -205,6 +205,71 @@ body {
   );
 }
 
+/* ---- Barre du haut persistante (marque + utilitaires) ---- */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 8px) 14px 8px;
+  background: rgba(8, 7, 14, 0.86);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.3);
+}
+.topbar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.28em;
+  color: var(--violet);
+  text-transform: uppercase;
+}
+.topbar__mark {
+  width: 14px;
+  height: 14px;
+  background: var(--violet);
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.8);
+}
+.topbar__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(124, 58, 237, 0.28);
+  border-radius: 6px;
+  color: var(--text-muted);
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+.topbar__icon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.topbar__icon:hover {
+  color: var(--text-primary);
+  border-color: var(--violet);
+}
+.topbar__icon[aria-current="page"] {
+  color: var(--violet);
+  border-color: var(--violet);
+  background: rgba(124, 58, 237, 0.16);
+}
+
 /* ---- Tab bar (navigation au pouce, PWA plein écran) ---- */
 .tabbar {
   position: fixed;
@@ -213,7 +278,7 @@ body {
   bottom: 0;
   z-index: 40;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 2px;
   padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   background: rgba(8, 7, 14, 0.86);
@@ -331,6 +396,122 @@ body {
   .is-slashing .xp-float {
     animation: none;
   }
+}
+
+/* ---- Chips de quête : XP, stat, timing (le timing ne se tronque jamais) ---- */
+.quest-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 3px;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: rgba(124, 58, 237, 0.08);
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.quest-chip--xp {
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--cyan);
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.quest-chip--time {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Bouton de check : NEUTRE (vide) → FAIT (plein + ✓) ---- */
+.quest-check {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.quest-check svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+/* État NEUTRE : hexagone creux, rien dedans → ça appelle le tap. */
+.quest-check .hexline {
+  fill: none;
+  stroke: rgba(124, 58, 237, 0.6);
+  stroke-width: 1.5;
+  transition:
+    fill 160ms ease,
+    stroke 160ms ease;
+}
+.quest-check .tick {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 160ms ease;
+}
+.quest-check:hover .hexline {
+  fill: rgba(124, 58, 237, 0.18);
+  stroke: var(--violet);
+}
+.quest-check:hover .tick {
+  stroke: rgba(34, 211, 238, 0.55);
+}
+/* État FAIT : hexagone PLEIN, ✓ franc — aucune ambiguïté avec l'état neutre. */
+.quest-check--done {
+  cursor: default;
+}
+.quest-check--done .hexline,
+.quest-check--done:hover .hexline {
+  fill: var(--cyan);
+  stroke: var(--cyan);
+  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.55));
+}
+.quest-check--done .tick,
+.quest-check--done:hover .tick {
+  stroke: #05050a;
+}
+
+/* ---- Bouton flottant « + » (création de quête) ---- */
+.fab {
+  position: fixed;
+  right: 18px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  z-index: 30;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--violet), #9d5cff);
+  color: #fff;
+  font-size: 1.6rem;
+  line-height: 1;
+  box-shadow:
+    0 0 18px rgba(124, 58, 237, 0.55),
+    0 10px 24px -8px rgba(0, 0, 0, 0.8);
+  transition: transform 120ms ease;
+}
+.fab:hover {
+  transform: scale(1.05);
+}
+.fab:active {
+  transform: scale(0.96);
+}
+.fab:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
 }
 
 /* ---- Hexagones de progression / PV (pips) ---- */

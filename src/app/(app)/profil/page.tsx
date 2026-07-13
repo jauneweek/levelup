@@ -4,7 +4,6 @@ import { SystemWindow } from "@/components/system-window";
 import { RankBadge } from "@/components/rank-badge";
 import { StatBar } from "@/components/stat-bar";
 import { ShadowSilhouette, type ShadowGrade } from "@/components/shadow-silhouette";
-import { PushSubscribeButton } from "@/components/push-subscribe-button";
 import { type StatCode } from "@/lib/xp";
 import { offsetDateInTimezone } from "@/lib/date";
 
@@ -20,7 +19,7 @@ export default async function ProfilPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, rank, global_level, timezone")
+    .select("username, rank, global_level, timezone, emblem_damage")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -31,7 +30,6 @@ export default async function ProfilPage() {
     { data: stats },
     { data: ghostSnapshot },
     { data: shadows },
-    { data: journalEntries },
     { data: userTitles },
     { data: userItems },
   ] = await Promise.all([
@@ -45,10 +43,6 @@ export default async function ProfilPage() {
       .from("shadows")
       .select("id, name, grade, extracted_at")
       .order("extracted_at", { ascending: false }),
-    supabase
-      .from("journal_entries")
-      .select("week_start, payload")
-      .order("week_start", { ascending: false }),
     supabase
       .from("user_titles")
       .select("equipped, unlocked_at, titles(name)")
@@ -83,7 +77,7 @@ export default async function ProfilPage() {
       {/* ── Hero ── */}
       <SystemWindow title="Profil du Chasseur">
         <div className="flex items-center gap-4">
-          <RankBadge rank={rank} size={72} />
+          <RankBadge rank={rank} emblemDamage={profile?.emblem_damage ?? 0} size={72} />
           <div className="min-w-0 flex-1">
             <p className="truncate font-display text-lg leading-tight text-text-primary">
               {profile?.username ?? user.email}
@@ -190,49 +184,6 @@ export default async function ProfilPage() {
         )}
       </SystemWindow>
 
-      {/* ── Journal ── */}
-      <SystemWindow title="Journal du Chasseur" showSystemTag={false}>
-        {!journalEntries || journalEntries.length === 0 ? (
-          <p className="text-sm text-text-muted">Ton premier récap arrive dimanche à 20h.</p>
-        ) : (
-          <div className="space-y-3">
-            {journalEntries.map((entry) => {
-              const p = entry.payload as {
-                quests_completed: number;
-                xp_gained: number;
-                xp_lost: number;
-                boss_damage: number;
-                shadows_extracted: number;
-                titles_unlocked: number;
-                completion_rate: number;
-              };
-              return (
-                <div key={entry.week_start} className="border border-border-glow/60 p-3 text-xs text-text-muted">
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <span className="font-display text-sm text-text-primary">
-                      Semaine du {entry.week_start}
-                    </span>
-                    <a
-                      href={`/profil/journal/${entry.week_start}/image`}
-                      className="text-cyan hover:underline"
-                    >
-                      Partager l&apos;image →
-                    </a>
-                  </div>
-                  <p>
-                    {p.quests_completed} quêtes · +{p.xp_gained} / -{p.xp_lost} XP · taux{" "}
-                    {Math.round(p.completion_rate * 100)}%
-                    {p.boss_damage > 0 ? ` · ${p.boss_damage} dégâts au boss` : ""}
-                    {p.shadows_extracted > 0 ? ` · ${p.shadows_extracted} Ombre(s)` : ""}
-                    {p.titles_unlocked > 0 ? ` · ${p.titles_unlocked} titre(s)` : ""}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </SystemWindow>
-
       {/* ── Collection ── */}
       <SystemWindow title="Collection" showSystemTag={false}>
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -252,19 +203,6 @@ export default async function ProfilPage() {
             <p className="text-xs text-text-muted">Objet{itemCount > 1 ? "s" : ""} en inventaire</p>
           </div>
         </div>
-      </SystemWindow>
-
-      {/* ── Réglages ── */}
-      <SystemWindow title="Réglages" showSystemTag={false}>
-        <p className="mb-3 text-xs text-text-muted">
-          Reçois les rappels [SYSTÈME] avant l&apos;heure limite de tes quêtes (T-30, T-15).
-        </p>
-        <PushSubscribeButton />
-        <form action="/auth/signout" method="post" className="mt-4">
-          <button type="submit" className="sys-cta sys-cta--ghost w-full py-2 hover:border-danger hover:text-danger">
-            Se déconnecter
-          </button>
-        </form>
       </SystemWindow>
     </div>
   );

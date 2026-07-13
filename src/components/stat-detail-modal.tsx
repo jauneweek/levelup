@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { StatBar } from "@/components/stat-bar";
 import type { StatCode } from "@/lib/xp";
 
@@ -9,11 +9,17 @@ const STAT_ORDER: StatCode[] = ["FOR", "INT", "SAG", "PRO", "END"];
 export type StatEntry = { level: number; current_xp: number };
 
 /**
- * Détail des niveaux par statistique, en modal — le Hub reste concentré sur
- * le radar et les quêtes. SPEC §9.2 : tout contenu modal passe par la
- * Fenêtre Système.
+ * Le radar lui-même est la cible : on tape dessus pour ouvrir le détail des
+ * niveaux (pas de bouton en format texte). SPEC §9.2 : tout contenu modal
+ * passe par la Fenêtre Système.
  */
-export function StatDetailModal({ stats }: { stats: Record<StatCode, StatEntry> }) {
+export function StatDetailModal({
+  stats,
+  children,
+}: {
+  stats: Record<StatCode, StatEntry>;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -30,9 +36,17 @@ export function StatDetailModal({ stats }: { stats: Record<StatCode, StatEntry> 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="focus-ring mt-1 text-xs text-cyan underline-offset-4 hover:underline"
+        aria-label="Voir le détail des statistiques"
+        className="focus-ring relative block w-full rounded-md transition-opacity hover:opacity-90"
       >
-        Détail des statistiques →
+        <span className="flex justify-center">{children}</span>
+        <span
+          aria-hidden
+          className="clip-hex absolute right-0 top-0 grid h-6 w-6 place-items-center bg-violet/25 text-[11px] text-cyan"
+          style={{ boxShadow: "inset 0 0 0 1px rgba(124,58,237,0.6)" }}
+        >
+          ⤢
+        </span>
       </button>
 
       {open && (

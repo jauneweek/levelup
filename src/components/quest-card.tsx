@@ -18,8 +18,11 @@ type QuestCardProps = {
   stat: StatCode;
   xp: number;
   done: boolean;
-  meta?: string;
+  /** Heure limite « HH:MM » — rendue en chip dédié, jamais tronquée. */
+  deadline?: string | null;
   express?: string | null;
+  /** Ouvre l'édition (Quêtes uniquement). */
+  onEdit?: () => void;
 };
 
 export function QuestCard({
@@ -29,8 +32,9 @@ export function QuestCard({
   stat,
   xp,
   done,
-  meta,
+  deadline,
   express,
+  onEdit,
 }: QuestCardProps) {
   const router = useRouter();
   const [slashing, setSlashing] = useState(false);
@@ -39,33 +43,40 @@ export function QuestCard({
   function run(action: (fd: FormData) => Promise<void>, field: string) {
     if (slashing || done) return;
     setSlashing(true);
-    const delay = REDUCED ? 0 : 620;
-    setTimeout(() => {
-      const fd = new FormData();
-      fd.set(field, id);
-      startTransition(async () => {
-        await action(fd);
-        router.refresh();
-      });
-    }, delay);
+    setTimeout(
+      () => {
+        const fd = new FormData();
+        fd.set(field, id);
+        startTransition(async () => {
+          await action(fd);
+          router.refresh();
+        });
+      },
+      REDUCED ? 0 : 620,
+    );
   }
 
   const onCheck = () =>
-    run(kind === "habit" ? completeHabit : completeTodo, kind === "habit" ? "habit_id" : "todo_id");
-  const onExpress = () => run(completeHabitExpress, "habit_id");
+    run(
+      kind === "habit" ? completeHabit : completeTodo,
+      kind === "habit" ? "habit_id" : "todo_id",
+    );
 
   return (
     <div
       className={`relative flex items-center gap-3 overflow-hidden rounded-md border p-3.5 transition-colors ${
         done
-          ? "border-white/5 opacity-45"
+          ? "border-white/5 bg-transparent opacity-55"
           : "border-border-glow bg-gradient-to-r from-violet/[0.07] to-transparent"
       } ${slashing ? "is-slashing" : ""}`}
     >
       {kind === "todo" ? (
         <span
           className="clip-hex grid h-9 w-9 shrink-0 place-items-center text-base"
-          style={{ background: "rgba(124,58,237,0.12)", boxShadow: "inset 0 0 0 1px rgba(124,58,237,0.5)" }}
+          style={{
+            background: "rgba(124,58,237,0.12)",
+            boxShadow: "inset 0 0 0 1px rgba(124,58,237,0.5)",
+          }}
         >
           📋
         </span>
@@ -73,50 +84,58 @@ export function QuestCard({
         <StatIcon stat={stat} size={36} />
       )}
 
-      <div className="min-w-0 flex-1">
+      <button
+        type="button"
+        onClick={onEdit}
+        disabled={!onEdit}
+        className={`min-w-0 flex-1 text-left ${onEdit ? "focus-ring rounded" : "cursor-default"}`}
+      >
         <p
           title={name}
           className={`truncate text-[15px] text-text-primary ${done ? "line-through" : ""}`}
         >
           {name}
         </p>
-        <p className="truncate text-xs">
-          <span className="font-display tabular-nums text-cyan">+{xp} XP</span>
-          <span className="text-text-muted">
-            {" · "}
-            {STAT_LABELS[stat]}
-            {meta ? ` · ${meta}` : ""}
-          </span>
-        </p>
-      </div>
+        {/* Chips : jamais de troncature sur le timing */}
+        <span className="mt-1 flex flex-wrap items-center gap-1.5">
+          <span className="quest-chip quest-chip--xp">+{xp} XP</span>
+          <span className="quest-chip">{STAT_LABELS[stat]}</span>
+          {deadline && <span className="quest-chip quest-chip--time">⏱ {deadline}</span>}
+          {kind === "todo" && <span className="quest-chip">todo</span>}
+        </span>
+      </button>
 
-      {done ? (
-        <span className="font-display shrink-0 text-sm tracking-wide text-cyan tabular-nums">✓</span>
-      ) : (
-        <>
-          {express && (
-            <button
-              type="button"
-              onClick={onExpress}
-              title={`Donjon express : ${express}`}
-              aria-label={`Donjon express de ${name} : ${express}`}
-              className="focus-ring clip-hex grid h-10 w-10 shrink-0 place-items-center bg-amber/15 text-base text-amber transition-colors hover:bg-amber/30"
-              style={{ boxShadow: "inset 0 0 0 1.5px rgba(245,158,11,0.6)" }}
-            >
-              ⚡
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onCheck}
-            aria-label={`Compléter ${name}`}
-            className="focus-ring clip-hex grid h-10 w-10 shrink-0 place-items-center bg-violet/25 text-base text-cyan transition-colors hover:bg-violet/50"
-            style={{ boxShadow: "inset 0 0 0 1.5px rgba(124,58,237,0.75)" }}
-          >
-            ✓
-          </button>
-        </>
+      {express && !done && (
+        <button
+          type="button"
+          onClick={() => run(completeHabitExpress, "habit_id")}
+          title={`Donjon express : ${express}`}
+          aria-label={`Donjon express de ${name} : ${express}`}
+          className="focus-ring clip-hex grid h-10 w-10 shrink-0 place-items-center bg-amber/12 text-base text-amber transition-colors hover:bg-amber/30"
+          style={{ boxShadow: "inset 0 0 0 1.5px rgba(245,158,11,0.55)" }}
+        >
+          ⚡
+        </button>
       )}
+
+      {/* Check : état NEUTRE = hexagone CREUX (il appelle le tap) → une fois
+          fait, hexagone PLEIN avec le ✓. En SVG : un clip-path découperait
+          l'inset box-shadow et ne dessinerait pas l'anneau. */}
+      <button
+        type="button"
+        onClick={onCheck}
+        disabled={done}
+        aria-label={done ? `${name} complétée` : `Compléter ${name}`}
+        className={`quest-check focus-ring ${done ? "quest-check--done" : ""}`}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden>
+          <polygon
+            className="hexline"
+            points="12,1.6 22.4,6.8 22.4,17.2 12,22.4 1.6,17.2 1.6,6.8"
+          />
+          <path className="tick" d="M7.8 12.4l2.8 2.8 5.6-5.8" />
+        </svg>
+      </button>
 
       <span className="slash-layer" aria-hidden />
       <span className="xp-float" aria-hidden>
