@@ -33,13 +33,19 @@ export function StatRadar({
 }) {
   const cx = size / 2;
   const cy = size / 2;
-  const R = size * 0.32;
+  // 0.26 + étiquettes courtes : garantit que END/INT (les plus latérales) ne
+  // débordent pas du SVG, quelle que soit la taille demandée.
+  const R = size * 0.26;
+
+  // Échelle ABSOLUE, pas relative à la stat la plus haute : un compte neuf
+  // (toutes les stats au niveau 1) doit afficher un pentagone minuscule, pas
+  // un radar maxé. Le plafond monte par paliers de 10 au fur et à mesure de
+  // la progression.
   const maxLevel = Math.max(1, ...AXES.map((s) => levels[s] ?? 1));
-  const fractions = AXES.map((s) => {
-    const lvl = levels[s] ?? 1;
-    // plancher visuel : même à bas niveau la forme reste lisible
-    return 0.16 + 0.84 * (lvl / maxLevel);
-  });
+  const ceiling = Math.max(10, Math.ceil(maxLevel / 10) * 10);
+  const fractions = AXES.map((s) =>
+    Math.max(0.04, Math.min(1, (levels[s] ?? 1) / ceiling)),
+  );
 
   return (
     <svg
@@ -108,7 +114,7 @@ export function StatRadar({
       {/* étiquettes — code de stat seul (le niveau précis vit dans les
           barres XP juste en dessous, on évite ainsi tout débordement) */}
       {AXES.map((s, i) => {
-        const p = vertex(cx, cy, R + 14, i);
+        const p = vertex(cx, cy, R + 12, i);
         const anchor = p.x < cx - 4 ? "end" : p.x > cx + 4 ? "start" : "middle";
         return (
           <text
@@ -119,8 +125,8 @@ export function StatRadar({
             dominantBaseline="middle"
             style={{
               fontFamily: "var(--font-orbitron), sans-serif",
-              fontSize: 11,
-              letterSpacing: "0.1em",
+              fontSize: 10,
+              letterSpacing: "0.05em",
               fill: "#b794f6",
             }}
           >

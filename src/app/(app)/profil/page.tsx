@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SystemWindow } from "@/components/system-window";
 import { RankBadge } from "@/components/rank-badge";
+import { StatBar } from "@/components/stat-bar";
 import { ShadowSilhouette, type ShadowGrade } from "@/components/shadow-silhouette";
 import { PushSubscribeButton } from "@/components/push-subscribe-button";
 import { type StatCode } from "@/lib/xp";
@@ -99,6 +100,18 @@ export default async function ProfilPage() {
             </span>
           </div>
         )}
+      </SystemWindow>
+
+      {/* ── Détail des statistiques (déplacé depuis le Hub) ── */}
+      <SystemWindow title="Statistiques" showSystemTag={false} tone="cyan">
+        <div className="space-y-3.5">
+          {STAT_ORDER.map((code) => {
+            const s = statsByCode.get(code);
+            return (
+              <StatBar key={code} stat={code} level={s?.level ?? 1} currentXp={s?.current_xp ?? 0} />
+            );
+          })}
+        </div>
       </SystemWindow>
 
       {/* ── Fantôme ── */}

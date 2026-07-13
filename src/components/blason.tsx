@@ -37,15 +37,27 @@ const STATE_LABELS: Record<0 | 1 | 2 | 3, string> = {
  * visible (0 = sain, 3 = boss actif). Indicateur statique volontairement
  * simple — les transitions/animations riches sont prévues en M7.
  */
-export function Blason({ emblemDamage }: { emblemDamage: number }) {
+export function Blason({
+  emblemDamage,
+  size = 56,
+  showLabel = true,
+}: {
+  emblemDamage: number;
+  size?: number;
+  showLabel?: boolean;
+}) {
   const state = Math.max(0, Math.min(3, Math.round(emblemDamage))) as 0 | 1 | 2 | 3;
   const style = STATE_STYLES[state];
 
   return (
-    <div className="flex flex-col items-center gap-1.5">
+    <div className="flex flex-col items-center gap-1.5" title={STATE_LABELS[state]}>
       <div
-        className={`relative h-14 w-14 border-2 ${style.border} ${style.glow} ${style.fill} transition-colors duration-500`}
-        style={{ clipPath: "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)" }}
+        className={`relative border-2 ${style.border} ${style.glow} ${style.fill} transition-colors duration-500`}
+        style={{
+          width: size,
+          height: size,
+          clipPath: "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
+        }}
       >
         {state >= 1 && (
           <svg viewBox="0 0 56 56" className="absolute inset-0 h-full w-full" aria-hidden>
@@ -63,7 +75,7 @@ export function Blason({ emblemDamage }: { emblemDamage: number }) {
           </svg>
         )}
       </div>
-      <span className="text-[10px] text-text-muted">{STATE_LABELS[state]}</span>
+      {showLabel && <span className="text-[10px] text-text-muted">{STATE_LABELS[state]}</span>}
     </div>
   );
 }

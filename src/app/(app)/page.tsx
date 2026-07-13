@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SystemWindow } from "@/components/system-window";
-import { StatBar } from "@/components/stat-bar";
 import { StatRadar } from "@/components/stat-radar";
+import { StatDetailModal, type StatEntry } from "@/components/stat-detail-modal";
 import { RankBadge } from "@/components/rank-badge";
 import { Blason } from "@/components/blason";
 import { QuestCard } from "@/components/quest-card";
@@ -59,39 +60,49 @@ export default async function HubPage() {
   const levels = Object.fromEntries(
     STAT_ORDER.map((c) => [c, statsByCode.get(c)?.level ?? 1]),
   ) as Record<StatCode, number>;
+  const statEntries = Object.fromEntries(
+    STAT_ORDER.map((c) => [
+      c,
+      {
+        level: statsByCode.get(c)?.level ?? 1,
+        current_xp: statsByCode.get(c)?.current_xp ?? 0,
+      } satisfies StatEntry,
+    ]),
+  ) as Record<StatCode, StatEntry>;
 
   const rank = (profile?.rank ?? "E") as HunterRank;
   const globalLevel = profile?.global_level ?? 1;
 
-  // Progression globale = moyenne des remplissages d'XP par stat.
   const aggPct = Math.round(
     (STAT_ORDER.reduce((sum, c) => {
-      const s = statsByCode.get(c);
-      return sum + (s ? (s.current_xp ?? 0) / xpToNextLevel(s.level ?? 1) : 0);
+      const s = statEntries[c];
+      return sum + s.current_xp / xpToNextLevel(s.level);
     }, 0) /
       STAT_ORDER.length) *
       100,
   );
-  const score = STAT_ORDER.reduce((sum, c) => {
-    const s = statsByCode.get(c);
-    return sum + cumulativeXp(s?.level ?? 1, s?.current_xp ?? 0);
-  }, 0);
+  const score = STAT_ORDER.reduce(
+    (sum, c) => sum + cumulativeXp(statEntries[c].level, statEntries[c].current_xp),
+    0,
+  );
 
   const eventLabel = eventToday?.event_type ? EVENT_LABELS[eventToday.event_type] : undefined;
 
   const pendingHabits = (day?.habits ?? []).filter((h) => !h.done);
   const pendingTodos = (day?.todos ?? []).filter((t) => !t.done);
-  const nextHabit = pendingHabits[0];
-  const nextTodo = !nextHabit ? pendingTodos[0] : undefined;
-  const remaining = pendingHabits.length + pendingTodos.length;
+  const doneHabits = (day?.habits ?? []).filter((h) => h.done);
+  const doneTodos = (day?.todos ?? []).filter((t) => t.done);
+  const total =
+    pendingHabits.length + pendingTodos.length + doneHabits.length + doneTodos.length;
+  const doneCount = doneHabits.length + doneTodos.length;
 
   return (
-    <div className="relative space-y-5">
+    <div className="relative space-y-4">
       <div className="app-nebula" aria-hidden />
 
-      {/* ── Hero : rang + niveau + progression ── */}
+      {/* ── Identité : rang · niveau · progression · radar ── */}
       <SystemWindow title="Hub du Chasseur">
-        <div className="flex flex-col items-center pt-2 text-center">
+        <div className="flex flex-col items-center text-center">
           <div className="rank-halo">
             <div className="rank-shards" aria-hidden>
               <span style={{ top: "6%", left: "12%" }} />
@@ -99,100 +110,123 @@ export default async function HubPage() {
               <span style={{ bottom: "18%", left: "6%" }} />
               <span style={{ bottom: "8%", right: "16%" }} />
             </div>
-            <RankBadge rank={rank} size={104} />
+            <RankBadge rank={rank} size={72} />
           </div>
-          <p className="mt-3 font-display text-xs tracking-[0.35em] text-violet">
-            RANG {rank} · CHASSEUR
-          </p>
-          <p className="font-display text-4xl leading-none text-text-primary">
+          <p className="mt-2 font-display text-2xl leading-none text-text-primary">
             NIVEAU {globalLevel}
           </p>
-          <p className="mt-1 text-xs text-text-muted">{profile?.username ?? user.email}</p>
         </div>
 
-        <div className="mt-5">
-          <div className="mb-1.5 flex items-baseline justify-between text-xs">
+        <div className="mt-3.5">
+          <div className="mb-1.5 flex items-baseline justify-between text-[11px]">
             <span className="uppercase tracking-widest text-text-muted">Progression</span>
             <span className="font-display tabular-nums text-cyan">{aggPct}%</span>
           </div>
           <div className="xp-track">
             <div className="xp-fill" style={{ width: `${aggPct}%` }} />
           </div>
-          <p className="mt-2.5 text-center text-xs text-text-muted">
-            Score global :{" "}
-            <b className="font-display tabular-nums text-cyan">{score.toLocaleString("fr-FR")}</b>
-          </p>
         </div>
-      </SystemWindow>
 
-      {/* ── Série (flamme) + blason ── */}
-      <SystemWindow title="Série" showSystemTag={false} tone="amber">
-        <div className="flex items-center gap-4">
-          <div className="flame shrink-0">
-            <span className="flame__glyph" aria-hidden>
-              🔥
+        {/* Bandeau compact : série · boucliers · blason */}
+        <div className="mt-3 flex items-center justify-between text-xs">
+          <span className="text-text-muted">
+            🔥{" "}
+            <b className="font-display tabular-nums text-amber">{globalStreak?.current ?? 0} j</b>
+            <span className="text-text-muted/70"> · record {globalStreak?.best ?? 0}</span>
+          </span>
+          <span className="text-text-muted">
+            🛡️ <b className="text-cyan">{globalStreak?.shields ?? 0}</b>
+          </span>
+          <Blason emblemDamage={profile?.emblem_damage ?? 0} size={28} showLabel={false} />
+        </div>
+
+        {/* Radar + accès au détail (les niveaux précis vivent dans le modal
+            et dans le Profil — le Hub reste centré sur l'action). */}
+        <div className="mt-1 flex flex-col items-center">
+          <StatRadar levels={levels} size={172} />
+          <div className="mt-0.5 flex w-full items-center justify-between text-[11px]">
+            <StatDetailModal stats={statEntries} />
+            <span className="text-text-muted">
+              Score{" "}
+              <b className="font-display tabular-nums text-cyan">
+                {score.toLocaleString("fr-FR")}
+              </b>
             </span>
-            <span className="flame__num tabular-nums">{globalStreak?.current ?? 0}</span>
           </div>
-          <div className="flex-1">
-            <p className="font-display text-lg uppercase tracking-wider text-text-primary">
-              Jours de série
-            </p>
-            <p className="mt-0.5 text-xs text-amber">
-              Record : {globalStreak?.best ?? 0} · 🛡️ {globalStreak?.shields ?? 0} bouclier
-              {(globalStreak?.shields ?? 0) > 1 ? "s" : ""}
-            </p>
-          </div>
-          <Blason emblemDamage={profile?.emblem_damage ?? 0} />
         </div>
       </SystemWindow>
 
-      {/* ── Radar des stats + détail ── */}
-      <SystemWindow title="Statistiques" showSystemTag={false} tone="cyan">
-        <div className="flex flex-col items-center">
-          <StatRadar levels={levels} size={268} />
-        </div>
-        <div className="mt-4 space-y-2.5">
-          {STAT_ORDER.map((code) => {
-            const s = statsByCode.get(code);
-            return (
-              <StatBar key={code} stat={code} level={s?.level ?? 1} currentXp={s?.current_xp ?? 0} />
-            );
-          })}
-        </div>
-      </SystemWindow>
-
-      {/* ── Prochaine quête ── */}
-      <SystemWindow title="Prochaine quête" showSystemTag={false}>
-        {nextHabit ? (
-          <QuestCard
-            id={nextHabit.id}
-            kind="habit"
-            name={nextHabit.name}
-            stat={nextHabit.stat}
-            xp={DIFFICULTY_XP[nextHabit.difficulty]}
-            done={false}
-            meta={
-              nextHabit.deadline_time
-                ? `avant ${nextHabit.deadline_time.slice(0, 5)}`
-                : `${remaining} restante${remaining > 1 ? "s" : ""} aujourd'hui`
-            }
-            express={nextHabit.minimal_version}
-          />
-        ) : nextTodo ? (
-          <QuestCard
-            id={nextTodo.id}
-            kind="todo"
-            name={nextTodo.title}
-            stat={nextTodo.stat}
-            xp={DIFFICULTY_XP[nextTodo.difficulty]}
-            done={false}
-            meta="todo"
-          />
-        ) : (
+      {/* ── Quêtes du jour (l'essentiel, sans scroll) ── */}
+      <SystemWindow title="Quêtes du jour" showSystemTag={false}>
+        {total === 0 ? (
           <p className="text-sm text-text-muted">
-            Toutes tes quêtes du jour sont complétées. Journée parfaite en vue. ✦
+            Aucune quête programmée aujourd&apos;hui.{" "}
+            <Link href="/quetes" className="text-cyan hover:underline">
+              Créer une quête
+            </Link>
+            .
           </p>
+        ) : (
+          <>
+            <div className="space-y-2">
+              {pendingHabits.map((h) => (
+                <QuestCard
+                  key={h.id}
+                  id={h.id}
+                  kind="habit"
+                  name={h.name}
+                  stat={h.stat}
+                  xp={DIFFICULTY_XP[h.difficulty]}
+                  done={false}
+                  meta={h.deadline_time ? `avant ${h.deadline_time.slice(0, 5)}` : undefined}
+                  express={h.minimal_version}
+                />
+              ))}
+              {pendingTodos.map((t) => (
+                <QuestCard
+                  key={t.id}
+                  id={t.id}
+                  kind="todo"
+                  name={t.title}
+                  stat={t.stat}
+                  xp={DIFFICULTY_XP[t.difficulty]}
+                  done={false}
+                  meta="todo"
+                />
+              ))}
+              {doneHabits.map((h) => (
+                <QuestCard
+                  key={h.id}
+                  id={h.id}
+                  kind="habit"
+                  name={h.name}
+                  stat={h.stat}
+                  xp={DIFFICULTY_XP[h.difficulty]}
+                  done
+                />
+              ))}
+              {doneTodos.map((t) => (
+                <QuestCard
+                  key={t.id}
+                  id={t.id}
+                  kind="todo"
+                  name={t.title}
+                  stat={t.stat}
+                  xp={DIFFICULTY_XP[t.difficulty]}
+                  done
+                />
+              ))}
+            </div>
+            <p className="mt-3 text-center text-xs text-text-muted">
+              <b className="font-display tabular-nums text-cyan">
+                {doneCount}/{total}
+              </b>{" "}
+              complétées ·{" "}
+              <Link href="/quetes" className="text-cyan hover:underline">
+                Hebdo &amp; gestion →
+              </Link>
+            </p>
+          </>
         )}
       </SystemWindow>
 
