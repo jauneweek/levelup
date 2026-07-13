@@ -48,7 +48,19 @@ Workflow : une branche par milestone (`m0-socle`, `m1-core-loop`…), PR à la f
 
 ## Comment déployer une modif
 - **Frontend/UI** : commit sur la branche de travail → `git checkout main && git merge --ff-only <branche> && git push origin main` → Vercel rebuild (~30-60 s). Vérifier via le CSS compilé en prod (`/_next/static/css/…`).
-- **DB (migrations/SQL)** : le CLI Supabase n'est **pas** authentifié localement (pas de token). Utiliser le **connecteur MCP Supabase** (`apply_migration` / `execute_sql`) sur `aqdjpadcoplcxalulllu`. Toujours refléter le fix dans le fichier de migration versionné aussi.
+- **DB (migrations/SQL)** : ⚠️ **JAMAIS par recopie via `apply_migration`.** Faire retaper 3 000 lignes de SQL à un modèle, c'est corrompre la logique de jeu en silence (une erreur s'applique sans lever d'exception). Les migrations 0005→0007 ont ainsi perdu des commentaires en route — sans conséquence, mais c'était de la chance.
+  **Méthode correcte : `psql` sur le fichier exact**, via Docker (le binaire est dans l'image Supabase) :
+  ```bash
+  PW=$(grep "^export SUPABASE_DB_PASSWORD=" ~/.zshrc | tail -1 | sed "s/^export SUPABASE_DB_PASSWORD=//; s/^'//; s/'$//")
+  docker run --rm -i -e PGPASSWORD="$PW" public.ecr.aws/supabase/postgres:17.6.1.143 \
+    psql -h aws-0-eu-west-3.pooler.supabase.com -p 5432 \
+         -U postgres.aqdjpadcoplcxalulllu -d postgres \
+         -v ON_ERROR_STOP=1 --single-transaction -f - < supabase/migrations/00XX_xxx.sql
+  ```
+  Puis enregistrer dans `supabase_migrations.schema_migrations (version, name)` (version = `date -u +%Y%m%d%H%M%S`).
+  ⚠️ Le shell non-interactif ne lit **pas** `~/.zshrc` : extraire le mot de passe du fichier, ne pas compter sur `$SUPABASE_DB_PASSWORD`.
+  **Vérifier après coup** : comparer l'empreinte md5 de `pg_get_functiondef()` de CHAQUE fonction, local vs prod. C'est ça qui prouve que la prod exécute le code testé.
+- **Connecteur MCP `supabase-levelup`** (local, épinglé sur le projet) : pour inspecter, diagnostiquer, `get_advisors`. Pas pour écrire des migrations.
 - **Vérif en conditions réelles** : signup via l'API GoTrue distante + cookie SSR (`sb-aqdjpadcoplcxalulllu-auth-token`), puis captures via Chrome headless (puppeteer-core, viewport iPhone). Nettoyer le compte de test ensuite. ⚠️ En zsh, ne jamais nommer une variable shell `UID` (lecture seule).
 
 ## Stack & conventions
