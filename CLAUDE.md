@@ -22,6 +22,12 @@ Workflow : une branche par milestone (`m0-socle`, `m1-core-loop`…), PR à la f
 - **Vercel** : prod = branche **`main`**, URL **`levelup-liart.vercel.app`** (auto-deploy au push sur `main`). Le connecteur MCP Vercel ne voit pas le projet (périmètre OAuth) → passer par `git push origin main`. Env vars (`NEXT_PUBLIC_SUPABASE_URL/ANON_KEY`, `VAPID_PUBLIC_KEY`) réglées côté Vercel depuis M3.
 - **Git** : `main` contient toute la stack M0→M7 (amenée en fast-forward). Les PR #1–#8 restent « ouvertes » (FF direct, non marquées merged sur GitHub) — cosmétique. Branche de travail courante : `m7-refonte-ui`.
 
+## Performance — le piège à connaître
+- ⚠️ **Région Vercel = région Supabase.** Par défaut Vercel exécute les fonctions à `iad1` (Washington) alors que la base est à `eu-west-3` (Paris) : chaque requête SQL devenait un aller-retour **transatlantique** (~180 ms). Le code enchaînait ~9 allers-retours en série par page → **~1,5 s de latence réseau pure**. C'était *toute* la « lag » ressentie (ni CSS, ni React). Corrigé par `vercel.json` → `"regions": ["cdg1"]` (Paris). **Vérifier après chaque déploiement** : `curl -sD- -o /dev/null <url> | grep x-vercel-id` doit contenir `cdg1`.
+- `auth.getUser()` n'est **pas** gratuit : c'est un appel réseau à GoTrue qui valide le JWT. Toujours passer par `getSessionUser()` (`src/lib/auth.ts`, mémoïsé par `cache()`) dans les composants serveur — il était appelé 4× par navigation.
+- `loading.tsx` est **obligatoire** : sans frontière `loading`, Next fige l'ancienne page pendant tout l'aller-retour (aucun retour visuel au tap). Contrepartie assumée : React impose un plancher d'affichage du fallback (~300 ms) avant de révéler le contenu.
+- Ne pas remettre de `backdrop-filter` ni de `background-attachment: fixed` : sur un fond de dégradé lisse le flou ne change quasiment aucun pixel, mais coûte une capture plein écran par panneau, réinvalidée à chaque frame de scroll.
+
 ## Comment déployer une modif
 - **Frontend/UI** : commit sur la branche de travail → `git checkout main && git merge --ff-only <branche> && git push origin main` → Vercel rebuild (~30-60 s). Vérifier via le CSS compilé en prod (`/_next/static/css/…`).
 - **DB (migrations/SQL)** : le CLI Supabase n'est **pas** authentifié localement (pas de token). Utiliser le **connecteur MCP Supabase** (`apply_migration` / `execute_sql`) sur `aqdjpadcoplcxalulllu`. Toujours refléter le fix dans le fichier de migration versionné aussi.

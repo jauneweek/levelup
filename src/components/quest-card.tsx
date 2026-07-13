@@ -6,7 +6,9 @@ import { STAT_LABELS, type StatCode } from "@/lib/xp";
 import { StatIcon } from "@/components/stat-icon";
 import { completeHabit, completeHabitExpress } from "@/app/habits/actions";
 import { completeTodo } from "@/app/todos/actions";
+import type { CompleteResult } from "@/lib/complete-result";
 import { haptic } from "@/lib/haptics";
+import { playCheck, playError, playLevelUp } from "@/lib/sound";
 
 const REDUCED =
   typeof window !== "undefined" &&
@@ -22,6 +24,10 @@ type QuestCardProps = {
   /** Heure limite « HH:MM » — rendue en chip dédié, jamais tronquée. */
   deadline?: string | null;
   express?: string | null;
+  /** Quêtes déjà validées aujourd'hui, et restantes (celle-ci comprise).
+   *  Sert à choisir le son de check : premier / courant / dernier du jour. */
+  dayDone: number;
+  dayPending: number;
   /** Ouvre l'édition (Quêtes uniquement). */
   onEdit?: () => void;
 };
@@ -35,23 +41,45 @@ export function QuestCard({
   done,
   deadline,
   express,
+  dayDone,
+  dayPending,
   onEdit,
 }: QuestCardProps) {
   const router = useRouter();
   const [slashing, setSlashing] = useState(false);
   const [, startTransition] = useTransition();
 
-  function run(action: (fd: FormData) => Promise<void>, field: string) {
+  function run(
+    action: (fd: FormData) => Promise<CompleteResult | null>,
+    field: string,
+  ) {
     if (slashing || done) return;
+
+    // Retour immédiat, DANS le geste : haptique + son partent avant même que la
+    // requête ne soit lancée. Un son qui attend le serveur n'est plus une
+    // réponse au tap, c'est une notification — et ça se sent tout de suite.
     haptic("success");
+    playCheck({ isFirstOfDay: dayDone === 0, isLastOfDay: dayPending <= 1 });
+
     setSlashing(true);
     setTimeout(
       () => {
         const fd = new FormData();
         fd.set(field, id);
         startTransition(async () => {
-          await action(fd);
-          router.refresh();
+          try {
+            const res = await action(fd);
+            // La fanfare arrive après le slash : elle se lit comme la
+            // conséquence du check, pas comme un son concurrent.
+            if (res?.leveledUp) playLevelUp(res.statLevel);
+            router.refresh();
+          } catch {
+            // Sans ça, une action en échec laissait la carte figée en
+            // « slashing » : plus aucun moyen de valider la quête.
+            haptic("warn");
+            playError();
+            setSlashing(false);
+          }
         });
       },
       REDUCED ? 0 : 620,

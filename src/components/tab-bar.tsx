@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { haptic } from "@/lib/haptics";
+import { tap } from "@/lib/feedback";
 
 type Tab = {
   href: string;
@@ -50,7 +50,7 @@ export function TabBar({ pendingCount = 0 }: { pendingCount?: number }) {
           <Link
             key={tab.href}
             href={tab.href}
-            onClick={() => haptic("tap")}
+            onClick={() => tap()}
             className="tab focus-ring"
             aria-current={active ? "page" : undefined}
           >

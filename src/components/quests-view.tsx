@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { SystemWindow } from "@/components/system-window";
 import { QuestCard } from "@/components/quest-card";
 import { Pips } from "@/components/pips";
 import { HabitModal, type EditableHabit } from "@/components/habit-modal";
 import { DIFFICULTY_XP, STAT_LABELS, type StatCode } from "@/lib/xp";
-import { haptic } from "@/lib/haptics";
+import { tap } from "@/lib/feedback";
+import { playBoss } from "@/lib/sound";
 
 const STAT_ORDER: StatCode[] = ["FOR", "INT", "SAG", "PRO", "END"];
 
@@ -46,16 +47,33 @@ export function QuestsView({
   const [arc, setArc] = useState<StatCode | "ALL">("ALL");
   const [modal, setModal] = useState<{ habit?: EditableHabit } | null>(null);
 
+  /* Le stinger de boss dure 5-6 s : il accompagne la confrontation, il ne
+     ponctue pas un tap. On ne le joue donc qu'à la PREMIÈRE ouverture de
+     l'onglet, et seulement s'il y a un boss en face. */
+  const bossAnnounced = useRef(false);
+
   const byArc = <T extends { stat: StatCode }>(xs: T[]) =>
     arc === "ALL" ? xs : xs.filter((x) => x.stat === arc);
 
-  const today = byArc(habits.filter((h) => h.scheduledToday));
+  const scheduled = habits.filter((h) => h.scheduledToday);
+
+  const today = byArc(scheduled);
   const todosToday = byArc(todos);
   const pending = [
     ...today.filter((h) => !h.done),
     ...todosToday.filter((t) => !t.done),
   ];
   const done = [...today.filter((h) => h.done), ...todosToday.filter((t) => t.done)];
+
+  /* Totaux du jour SANS le filtre d'arc : ils décident du son de check (premier
+     du jour / courant / celui qui vide la liste). En se basant sur `pending`,
+     un filtre actif sur un seul arc aurait fait sonner la « journée parfaite »
+     alors qu'il restait des quêtes dans les autres arcs. */
+  const dayDone =
+    scheduled.filter((h) => h.done).length + todos.filter((t) => t.done).length;
+  const dayPending =
+    scheduled.filter((h) => !h.done).length +
+    todos.filter((t) => !t.done).length;
 
   const segments: { key: Seg; label: string }[] = [
     { key: "jour", label: "Quotidiennes" },
@@ -76,7 +94,11 @@ export function QuestsView({
               role="tab"
               aria-selected={on}
               onClick={() => {
-                haptic("tap");
+                tap();
+                if (s.key === "boss" && boss && !bossAnnounced.current) {
+                  bossAnnounced.current = true;
+                  playBoss();
+                }
                 setSeg(s.key);
               }}
               className={`focus-ring clip-hex-wide flex-1 py-2 text-center font-display text-xs uppercase tracking-widest transition-colors ${
@@ -99,7 +121,7 @@ export function QuestsView({
             className="sys-select"
             value={arc}
             onChange={(e) => {
-              haptic("tap");
+              tap();
               setArc(e.target.value as StatCode | "ALL");
             }}
           >
@@ -130,12 +152,14 @@ export function QuestsView({
                     kind="habit"
                     name={q.name}
                     stat={q.stat}
+                    dayDone={dayDone}
+                    dayPending={dayPending}
                     xp={DIFFICULTY_XP[q.difficulty]}
                     done={false}
                     deadline={q.deadline_time ? q.deadline_time.slice(0, 5) : null}
                     express={q.minimal_version}
                     onEdit={() => {
-                      haptic("tap");
+                      tap();
                       setModal({ habit: q });
                     }}
                   />
@@ -146,6 +170,8 @@ export function QuestsView({
                     kind="todo"
                     name={q.title}
                     stat={q.stat}
+                    dayDone={dayDone}
+                    dayPending={dayPending}
                     xp={DIFFICULTY_XP[q.difficulty]}
                     done={false}
                   />
@@ -159,11 +185,13 @@ export function QuestsView({
                     kind="habit"
                     name={q.name}
                     stat={q.stat}
+                    dayDone={dayDone}
+                    dayPending={dayPending}
                     xp={DIFFICULTY_XP[q.difficulty]}
                     done
                     deadline={q.deadline_time ? q.deadline_time.slice(0, 5) : null}
                     onEdit={() => {
-                      haptic("tap");
+                      tap();
                       setModal({ habit: q });
                     }}
                   />
@@ -174,6 +202,8 @@ export function QuestsView({
                     kind="todo"
                     name={q.title}
                     stat={q.stat}
+                    dayDone={dayDone}
+                    dayPending={dayPending}
                     xp={DIFFICULTY_XP[q.difficulty]}
                     done
                   />
@@ -253,7 +283,7 @@ export function QuestsView({
       <button
         type="button"
         onClick={() => {
-          haptic("tap");
+          tap();
           setModal({});
         }}
         className="fab"

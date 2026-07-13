@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { SystemWindow } from "@/components/system-window";
 import { StatRadar } from "@/components/stat-radar";
 import { StatDetailModal, type StatEntry } from "@/components/stat-detail-modal";
@@ -29,9 +30,7 @@ function cumulativeXp(level: number, currentXp: number): number {
  */
 export default async function HubPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const day = await getDayState();

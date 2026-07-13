@@ -51,7 +51,23 @@ body {
 body {
   min-height: 100%;
   background-color: var(--bg-abyss);
-  /* Nappe de gradient sobre (Hub quotidien : glow discret, pas de particules) */
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Nappe de gradient sobre (Hub quotidien : glow discret, pas de particules).
+   Portée par une couche `position: fixed` et NON par `background-attachment:
+   fixed` : ce dernier interdit au compositeur de mettre le fond en cache et
+   force un repaint plein écran à chaque frame de scroll (jank iOS notoire).
+   Ici la couche est peinte une fois puis simplement recomposée. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image:
     radial-gradient(
       120% 80% at 50% -10%,
@@ -63,11 +79,6 @@ body {
       rgba(34, 211, 238, 0.08),
       transparent 55%
     );
-  background-attachment: fixed;
-  color: var(--text-primary);
-  font-family: var(--font-sans), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 /* Typo display anguleuse : titres de rang, gros chiffres, [SYSTÈME] */
@@ -77,9 +88,42 @@ body {
   text-transform: uppercase;
 }
 
+/* ---- Squelette de chargement (frontière `loading.tsx`) ---- */
+.skel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(124, 58, 237, 0.22);
+  border-radius: 6px;
+  background: var(--bg-panel);
+}
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Balayage en `transform` uniquement → animation composée par le GPU. */
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(124, 58, 237, 0.12),
+    transparent
+  );
+  animation: skel-sweep 1.2s ease-in-out infinite;
+}
+@keyframes skel-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel::after {
+    animation: none;
+  }
+}
+
 /* =========================================================
    Composant signature « Fenêtre Système » (SPEC §9.2)
-   panneau verre + blur + bordure glow + corner brackets
+   panneau verre + bordure glow + corner brackets
    ========================================================= */
 .system-window {
   position: relative;
@@ -88,15 +132,16 @@ body {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 42%),
     var(--bg-panel);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  /* PAS de backdrop-filter ici. Ce qui passe derrière le panneau est le fond
+     abysse + une nappe de dégradé radial : flouter un dégradé déjà lisse ne
+     déplace quasiment aucun pixel, alors que `backdrop-filter` coûte une
+     capture + un flou plein écran PAR panneau, réinvalidés à chaque repaint.
+     On payait le prix fort pour un rendu identique. */
   border: 1px solid var(--sw-accent-soft);
   border-radius: 6px;
   box-shadow:
     0 0 22px -6px var(--sw-accent-soft),
-    0 24px 60px -28px rgba(0, 0, 0, 0.85),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
-    inset 0 0 55px -32px var(--sw-accent-soft);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
 }
 /* Tonalités : boss/danger (rouge), cyan (data), ghost (Fantôme), amber */
 .system-window[data-tone="danger"] {
@@ -217,9 +262,11 @@ body {
   justify-content: space-between;
   gap: 10px;
   padding: calc(env(safe-area-inset-top) + 8px) 14px 8px;
-  background: rgba(8, 7, 14, 0.86);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  /* Barre fixe, donc superposée au contenu qui défile : sans flou, un fond à
+     0.86 laisserait « fantômer » le texte net dessous. On monte à 0.97 — la
+     barre se lit comme un panneau plein, et on économise le backdrop-filter,
+     qui sur un élément fixe se réinvalide à CHAQUE frame de scroll. */
+  background: rgba(8, 7, 14, 0.97);
   border-bottom: 1px solid rgba(124, 58, 237, 0.3);
 }
 .topbar__brand {
@@ -283,9 +330,7 @@ body {
   /* Bas serré : on ne garde QUE la safe-area (zone du home indicator iOS),
      pas d'espace vide en plus sous les libellés. */
   padding: 5px 8px calc(2px + env(safe-area-inset-bottom));
-  background: rgba(8, 7, 14, 0.86);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(8, 7, 14, 0.97);
   border-top: 1px solid rgba(124, 58, 237, 0.35);
 }
 .tab {
@@ -701,8 +746,12 @@ body {
     rgba(124, 58, 237, 0.12) 45%,
     transparent 70%
   );
-  filter: blur(6px);
+  /* Pas de `filter: blur()` : la source est déjà un dégradé radial lisse, le
+     flou n'y ajoute rien de perceptible. En le retirant, l'animation ci-dessous
+     ne touche plus que transform + opacity → purement composée par le GPU,
+     sans re-rastérisation du flou à chaque frame. */
   z-index: 0;
+  will-change: transform, opacity;
   animation: halo-pulse 4s ease-in-out infinite;
 }
 @keyframes halo-pulse {

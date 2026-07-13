@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { TabBar } from "@/components/tab-bar";
 import { TopBar } from "@/components/top-bar";
+import { SoundInit } from "@/components/sound-init";
+import { getSessionUser } from "@/lib/auth";
 import { getDayState } from "@/lib/quests";
 
 export default async function AppLayout({
@@ -9,16 +10,14 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const day = await getDayState();
 
   return (
     <>
+      <SoundInit />
       <TopBar />
       {/* La barre du haut est fixe : on réserve sa hauteur (safe-area + ~50px). */}
       <div

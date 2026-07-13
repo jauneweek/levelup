@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { todayInTimezone } from "@/lib/date";
 import type { StatCode } from "@/lib/xp";
 
@@ -38,36 +39,47 @@ export type DayState = {
  * (prochaine quête) et l'écran Quêtes. `cache` déduplique les requêtes sur
  * un même rendu serveur, donc appeler ce helper 2× dans une requête ne coûte
  * qu'un seul aller-retour Supabase.
+ *
+ * Les requêtes étaient auparavant enchaînées en SÉRIE (auth → profil →
+ * habitudes → logs → todos), soit 5 allers-retours bout à bout. Il n'y a en
+ * réalité que 2 vraies dépendances : les logs ont besoin des ids d'habitudes,
+ * et logs + todos ont besoin de la date locale (donc du fuseau du profil). On
+ * regroupe donc en 2 vagues parallèles derrière l'auth.
  */
 export const getDayState = cache(async (): Promise<DayState | null> => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("timezone")
-    .eq("id", user.id)
-    .maybeSingle();
+  const supabase = await createClient();
+
+  // Vague 1 — profil et habitudes ne dépendent pas l'un de l'autre.
+  const [{ data: profile }, { data: habitsRaw }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("timezone")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("habits")
+      .select(
+        "id, name, stat, difficulty, deadline_time, minimal_version, schedule",
+      )
+      .eq("active", true)
+      .order("deadline_time", { ascending: true, nullsFirst: false }),
+  ]);
 
   const timezone = profile?.timezone ?? "UTC";
   const { dateStr: today, isoWeekday } = todayInTimezone(timezone);
-
-  const { data: habitsRaw } = await supabase
-    .from("habits")
-    .select("id, name, stat, difficulty, deadline_time, minimal_version, schedule")
-    .eq("active", true)
-    .order("deadline_time", { ascending: true, nullsFirst: false });
 
   const scheduled = (habitsRaw ?? []).filter((h) =>
     (h.schedule?.days as number[] | undefined)?.includes(isoWeekday),
   );
 
-  const { data: logs } =
+  // Vague 2 — logs et todos ont tous deux besoin de `today`, mais pas l'un de
+  // l'autre.
+  const [logsRes, todosRes] = await Promise.all([
     scheduled.length > 0
-      ? await supabase
+      ? supabase
           .from("habit_logs")
           .select("habit_id")
           .eq("date", today)
@@ -75,14 +87,16 @@ export const getDayState = cache(async (): Promise<DayState | null> => {
             "habit_id",
             scheduled.map((h) => h.id),
           )
-      : { data: [] as { habit_id: string }[] };
-  const doneHabitIds = new Set((logs ?? []).map((l) => l.habit_id));
+      : Promise.resolve({ data: [] as { habit_id: string }[] }),
+    supabase
+      .from("todos")
+      .select("id, title, stat, difficulty, completed_at")
+      .eq("date", today)
+      .order("created_at", { ascending: true }),
+  ]);
 
-  const { data: todosRaw } = await supabase
-    .from("todos")
-    .select("id, title, stat, difficulty, completed_at")
-    .eq("date", today)
-    .order("created_at", { ascending: true });
+  const doneHabitIds = new Set((logsRes.data ?? []).map((l) => l.habit_id));
+  const todosRaw = todosRes.data;
 
   const habits: HabitQuest[] = scheduled.map((h) => ({
     id: h.id,

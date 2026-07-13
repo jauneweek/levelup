@@ -2,15 +2,16 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { haptic } from "@/lib/haptics";
+import { closeWindow } from "@/lib/feedback";
 
 /**
  * Modal « Fenêtre Système » (SPEC §9.2).
  *
- * ⚠️ Rendu via un PORTAL sur <body> — indispensable : la Fenêtre Système
- * utilise `backdrop-filter`, or filter/backdrop-filter créent un *containing
- * block* pour les descendants en `position: fixed`. Sans portal, le modal
- * restait piégé À L'INTÉRIEUR du panneau au lieu de couvrir l'écran.
+ * ⚠️ Rendu via un PORTAL sur <body>, et ça doit le rester. Un modal en
+ * `position: fixed` est piégé par tout ancêtre qui crée un *containing block*
+ * (filter, transform, will-change, backdrop-filter…) ou qui a un `overflow`
+ * scrollable — ce qui est arrivé une première fois. Le portal rend le modal
+ * immunisé à ce que font ses parents, indépendamment de leur CSS du moment.
  */
 export function SystemModal({
   title,
@@ -39,7 +40,7 @@ export function SystemModal({
   if (!mounted) return null;
 
   const close = () => {
-    haptic("tap");
+    closeWindow();
     onClose();
   };
 
@@ -50,7 +51,10 @@ export function SystemModal({
       aria-label={title}
       onClick={close}
       className="fixed inset-0 z-[100] grid place-items-center p-4"
-      style={{ background: "rgba(5,5,10,0.88)", backdropFilter: "blur(6px)" }}
+      /* Voile opaque plutôt que `backdrop-filter: blur()` : le flou plein écran
+         se déclenchait pile au clic d'ouverture — c'était une source directe de
+         saccade. À 0.94 d'opacité, le fond est de toute façon quasi masqué. */
+      style={{ background: "rgba(5,5,10,0.94)" }}
     >
       <section
         onClick={(e) => e.stopPropagation()}

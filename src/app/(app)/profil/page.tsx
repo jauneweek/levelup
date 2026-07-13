@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { SystemWindow } from "@/components/system-window";
 import { RankBadge } from "@/components/rank-badge";
 import { StatBar } from "@/components/stat-bar";
@@ -12,9 +13,7 @@ type HunterRank = "E" | "D" | "C" | "B" | "A" | "S";
 
 export default async function ProfilPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase

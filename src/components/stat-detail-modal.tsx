@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { StatBar } from "@/components/stat-bar";
 import { SystemModal } from "@/components/system-modal";
-import { haptic } from "@/lib/haptics";
+import { openWindow } from "@/lib/feedback";
 import type { StatCode } from "@/lib/xp";
 
 const STAT_ORDER: StatCode[] = ["FOR", "INT", "SAG", "PRO", "END"];
@@ -21,7 +21,7 @@ export function StatDetailModal({
   const [open, setOpen] = useState(false);
 
   const show = () => {
-    haptic("tap");
+    openWindow();
     setOpen(true);
   };
 

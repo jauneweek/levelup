@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import {
   QuestsView,
   type QuestHabit,
@@ -19,9 +20,7 @@ function rewardLabel(reward: Record<string, unknown>): string {
 
 export default async function QuetesPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const day = await getDayState();

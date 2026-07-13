@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseCompleteResult, type CompleteResult } from "@/lib/complete-result";
 import type { StatCode } from "@/lib/xp";
 
 type Difficulty = "easy" | "medium" | "hard";
@@ -103,28 +104,34 @@ export async function deleteHabit(formData: FormData) {
   revalidatePath("/");
 }
 
-export async function completeHabit(formData: FormData) {
+export async function completeHabit(
+  formData: FormData,
+): Promise<CompleteResult | null> {
   const supabase = await createClient();
   const habitId = String(formData.get("habit_id") ?? "");
   if (!habitId) throw new Error("habit_id manquant");
 
-  const { error } = await supabase.rpc("complete_habit", {
+  const { data, error } = await supabase.rpc("complete_habit", {
     p_habit_id: habitId,
   });
   if (error) throw new Error(error.message);
 
   revalidatePath("/");
+  return parseCompleteResult(data);
 }
 
-export async function completeHabitExpress(formData: FormData) {
+export async function completeHabitExpress(
+  formData: FormData,
+): Promise<CompleteResult | null> {
   const supabase = await createClient();
   const habitId = String(formData.get("habit_id") ?? "");
   if (!habitId) throw new Error("habit_id manquant");
 
-  const { error } = await supabase.rpc("complete_habit_express", {
+  const { data, error } = await supabase.rpc("complete_habit_express", {
     p_habit_id: habitId,
   });
   if (error) throw new Error(error.message);
 
   revalidatePath("/");
+  return parseCompleteResult(data);
 }

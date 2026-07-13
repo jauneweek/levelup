@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseCompleteResult, type CompleteResult } from "@/lib/complete-result";
 import type { StatCode } from "@/lib/xp";
 
 type Difficulty = "easy" | "medium" | "hard";
@@ -33,15 +34,20 @@ export async function createTodo(formData: FormData) {
   revalidatePath("/");
 }
 
-export async function completeTodo(formData: FormData) {
+export async function completeTodo(
+  formData: FormData,
+): Promise<CompleteResult | null> {
   const supabase = await createClient();
   const todoId = String(formData.get("todo_id") ?? "");
   if (!todoId) throw new Error("todo_id manquant");
 
-  const { error } = await supabase.rpc("complete_todo", { p_todo_id: todoId });
+  const { data, error } = await supabase.rpc("complete_todo", {
+    p_todo_id: todoId,
+  });
   if (error) throw new Error(error.message);
 
   revalidatePath("/");
+  return parseCompleteResult(data);
 }
 
 export async function deleteTodo(formData: FormData) {

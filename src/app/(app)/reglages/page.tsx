@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { SystemWindow } from "@/components/system-window";
 import { PushSubscribeButton } from "@/components/push-subscribe-button";
+import { SoundToggle } from "@/components/sound-toggle";
 
 export default async function ReglagesPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
@@ -28,6 +28,10 @@ export default async function ReglagesPage() {
           le briefing du matin. Le ton s&apos;adapte : plus tu ignores, plus il durcit.
         </p>
         <PushSubscribeButton />
+      </SystemWindow>
+
+      <SystemWindow title="Ambiance" showSystemTag={false}>
+        <SoundToggle />
       </SystemWindow>
 
       <SystemWindow title="Compte" showSystemTag={false}>

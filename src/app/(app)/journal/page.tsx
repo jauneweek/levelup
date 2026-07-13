@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { SystemWindow } from "@/components/system-window";
 
 type JournalPayload = {
@@ -15,9 +16,7 @@ type JournalPayload = {
 
 export default async function JournalPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const { data: entries } = await supabase

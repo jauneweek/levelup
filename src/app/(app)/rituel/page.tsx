@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { SystemWindow } from "@/components/system-window";
 import { SegmentTabs } from "@/components/segment-tabs";
 import { TodoQuickAdd } from "@/components/todo-quick-add";
@@ -34,9 +35,7 @@ function dateLabel(tz: string): string {
 
 export default async function RituelPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const day = await getDayState();
