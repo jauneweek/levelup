@@ -6,12 +6,18 @@ import { QuestCard } from "@/components/quest-card";
 import { Pips } from "@/components/pips";
 import { HabitModal, type EditableHabit } from "@/components/habit-modal";
 import { DIFFICULTY_XP, STAT_LABELS, type StatCode } from "@/lib/xp";
+import { RECURRENCE_LABELS, type Recurrence } from "@/lib/recurrence";
 import { tap } from "@/lib/feedback";
 import { playBoss } from "@/lib/sound";
 
 const STAT_ORDER: StatCode[] = ["FOR", "INT", "SAG", "PRO", "END"];
+const RECURRENCES = Object.keys(RECURRENCE_LABELS) as Recurrence[];
 
-export type QuestHabit = EditableHabit & { done: boolean; scheduledToday: boolean };
+export type QuestHabit = EditableHabit & {
+  done: boolean;
+  doneInPeriod: number;
+  remaining: number;
+};
 export type QuestTodo = {
   id: string;
   title: string;
@@ -45,6 +51,7 @@ export function QuestsView({
 }) {
   const [seg, setSeg] = useState<Seg>("jour");
   const [arc, setArc] = useState<StatCode | "ALL">("ALL");
+  const [rec, setRec] = useState<Recurrence | "ALL">("ALL");
   const [modal, setModal] = useState<{ habit?: EditableHabit } | null>(null);
 
   /* Le stinger de boss dure 5-6 s : il accompagne la confrontation, il ne
@@ -55,29 +62,32 @@ export function QuestsView({
   const byArc = <T extends { stat: StatCode }>(xs: T[]) =>
     arc === "ALL" ? xs : xs.filter((x) => x.stat === arc);
 
-  const scheduled = habits.filter((h) => h.scheduledToday);
+  /* Sous le quota, aucune quête n'est « programmée aujourd'hui » : elle est
+     proposable tant que son quota de période n'est pas rempli. La liste est donc
+     TOUTES les quêtes actives — le serveur a déjà calculé `remaining`. */
+  const visible = rec === "ALL" ? habits : habits.filter((h) => h.recurrence === rec);
 
-  const today = byArc(scheduled);
-  const todosToday = byArc(todos);
+  const shownHabits = byArc(visible);
+  const shownTodos = rec === "ALL" || rec === "once" ? byArc(todos) : [];
+
   const pending = [
-    ...today.filter((h) => !h.done),
-    ...todosToday.filter((t) => !t.done),
+    ...shownHabits.filter((h) => !h.done),
+    ...shownTodos.filter((t) => !t.done),
   ];
-  const done = [...today.filter((h) => h.done), ...todosToday.filter((t) => t.done)];
+  const done = [...shownHabits.filter((h) => h.done), ...shownTodos.filter((t) => t.done)];
 
-  /* Totaux du jour SANS le filtre d'arc : ils décident du son de check (premier
-     du jour / courant / celui qui vide la liste). En se basant sur `pending`,
-     un filtre actif sur un seul arc aurait fait sonner la « journée parfaite »
-     alors qu'il restait des quêtes dans les autres arcs. */
+  /* Totaux du jour SANS filtre : ils décident du son de check (premier du jour /
+     courant / celui qui vide la liste). En se basant sur `pending`, un filtre
+     actif aurait fait sonner la « journée parfaite » alors qu'il restait des
+     quêtes masquées par le filtre. */
   const dayDone =
-    scheduled.filter((h) => h.done).length + todos.filter((t) => t.done).length;
+    habits.filter((h) => h.done).length + todos.filter((t) => t.done).length;
   const dayPending =
-    scheduled.filter((h) => !h.done).length +
-    todos.filter((t) => !t.done).length;
+    habits.filter((h) => !h.done).length + todos.filter((t) => !t.done).length;
 
   const segments: { key: Seg; label: string }[] = [
-    { key: "jour", label: "Quotidiennes" },
-    { key: "hebdo", label: "Hebdo" },
+    { key: "jour", label: "À faire" },
+    { key: "hebdo", label: "Système" },
     { key: "boss", label: "Boss" },
   ];
 
@@ -113,26 +123,47 @@ export function QuestsView({
         })}
       </div>
 
-      {/* Arc = filtre par domaine, en menu déroulant */}
+      {/* Deux axes de classement : par arc, et par récurrence. */}
       {seg === "jour" && (
-        <label className="block">
-          <span className="sr-only">Filtrer par arc</span>
-          <select
-            className="sys-select"
-            value={arc}
-            onChange={(e) => {
-              tap();
-              setArc(e.target.value as StatCode | "ALL");
-            }}
-          >
-            <option value="ALL">Tous les arcs</option>
-            {STAT_ORDER.map((s) => (
-              <option key={s} value={s}>
-                {STAT_LABELS[s]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="block">
+            <span className="sr-only">Filtrer par arc</span>
+            <select
+              className="sys-select"
+              value={arc}
+              onChange={(e) => {
+                tap();
+                setArc(e.target.value as StatCode | "ALL");
+              }}
+            >
+              <option value="ALL">Tous les arcs</option>
+              {STAT_ORDER.map((s) => (
+                <option key={s} value={s}>
+                  {STAT_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="sr-only">Filtrer par récurrence</span>
+            <select
+              className="sys-select"
+              value={rec}
+              onChange={(e) => {
+                tap();
+                setRec(e.target.value as Recurrence | "ALL");
+              }}
+            >
+              <option value="ALL">Toutes récurrences</option>
+              {RECURRENCES.map((r) => (
+                <option key={r} value={r}>
+                  {RECURRENCE_LABELS[r]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       )}
 
       {/* ── Quotidiennes ── */}
@@ -152,6 +183,9 @@ export function QuestsView({
                     kind="habit"
                     name={q.name}
                     stat={q.stat}
+                    recurrence={q.recurrence}
+                    frequency={q.frequency}
+                    doneInPeriod={q.doneInPeriod}
                     dayDone={dayDone}
                     dayPending={dayPending}
                     xp={DIFFICULTY_XP[q.difficulty]}
@@ -185,6 +219,9 @@ export function QuestsView({
                     kind="habit"
                     name={q.name}
                     stat={q.stat}
+                    recurrence={q.recurrence}
+                    frequency={q.frequency}
+                    doneInPeriod={q.doneInPeriod}
                     dayDone={dayDone}
                     dayPending={dayPending}
                     xp={DIFFICULTY_XP[q.difficulty]}

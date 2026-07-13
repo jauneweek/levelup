@@ -39,10 +39,10 @@ select is(
 -- ce qui écrasait l'escalade dès le tout premier rappel.
 insert into auth.users (id, email, raw_user_meta_data)
 values ('c0000000-0000-0000-0000-00000000000f', 'fresh@test.dev', '{"timezone":"UTC"}'::jsonb);
-insert into habits (id, user_id, name, stat, difficulty, schedule)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency)
 values ('c0000000-0000-0000-0000-000000000ffa',
         'c0000000-0000-0000-0000-00000000000f', 'toute nouvelle', 'FOR', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb);
+        'daily', 1);
 
 select is(
   (get_notification_context('c0000000-0000-0000-0000-00000000000f')->>'is_slump')::boolean,
@@ -59,10 +59,10 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('c0000000-0000-0000-0000-00000000000a', 'a@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, deadline_time, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, deadline_time, created_at)
 values ('c0000000-0000-0000-0000-00000000aaaa',
         'c0000000-0000-0000-0000-00000000000a', 'sport', 'FOR', 'hard',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb,
+        'daily', 1,
         (now() + interval '28 minutes')::time, now() - interval '30 days');
 
 select is(
@@ -96,10 +96,10 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('c0000000-0000-0000-0000-00000000000b', 'b@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, deadline_time, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, deadline_time, created_at)
 values ('c0000000-0000-0000-0000-00000000bbbb',
         'c0000000-0000-0000-0000-00000000000b', 'lecture', 'INT', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb,
+        'daily', 1,
         (now() + interval '13 minutes')::time, now() - interval '8 days');
 
 -- Historique sain les 6 jours précédents (pas aujourd'hui) : garde
@@ -138,17 +138,17 @@ insert into auth.users (id, email, raw_user_meta_data)
 values ('c0000000-0000-0000-0000-00000000000c', 'c@test.dev', '{"timezone":"UTC"}'::jsonb);
 
 -- 2 habitudes déjà "ignorées" aujourd'hui (notif envoyée, jamais complétées).
-insert into habits (id, user_id, name, stat, difficulty, schedule, deadline_time, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, deadline_time, created_at)
 values
   ('c0000000-0000-0000-0000-0000000000c1',
    'c0000000-0000-0000-0000-00000000000c', 'habit1', 'FOR', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb, '23:59', now() - interval '8 days'),
+   'daily', 1, '23:59', now() - interval '8 days'),
   ('c0000000-0000-0000-0000-0000000000c2',
    'c0000000-0000-0000-0000-00000000000c', 'habit2', 'INT', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb, '23:59', now() - interval '8 days'),
+   'daily', 1, '23:59', now() - interval '8 days'),
   ('c0000000-0000-0000-0000-0000000000c3',
    'c0000000-0000-0000-0000-00000000000c', 'habit3 (celle qui teste)', 'SAG', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb, (now() + interval '13 minutes')::time,
+   'daily', 1, (now() + interval '13 minutes')::time,
    now() - interval '8 days');
 
 -- Historique sain (pas aujourd'hui) sur les 3 habitudes : évite un faux
@@ -191,10 +191,10 @@ select is(
 -- système (sinon la règle Boss ne se déclenche quasiment jamais, vu qu'à
 -- T-15 le T-30 de CETTE habitude est presque toujours déjà ignoré).
 -- Bug trouvé en testant M3 sur un vrai iPhone.
-insert into habits (id, user_id, name, stat, difficulty, schedule, deadline_time, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, deadline_time, created_at)
 values ('c0000000-0000-0000-0000-0000000000c4',
         'c0000000-0000-0000-0000-00000000000c', 'habit4 (collision)', 'PRO', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, (now() + interval '13 minutes')::time,
+        'daily', 1, (now() + interval '13 minutes')::time,
         now() - interval '8 days');
 
 do $$
@@ -226,10 +226,10 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('c0000000-0000-0000-0000-00000000000d', 'd@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, deadline_time, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, deadline_time, created_at)
 values ('c0000000-0000-0000-0000-00000000dddd',
         'c0000000-0000-0000-0000-00000000000d', 'quête slump', 'PRO', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb,
+        'daily', 1,
         (now() + interval '28 minutes')::time, now() - interval '10 days');
 
 -- 7 jours d'historique très bas (rate << 40%) : 1 seule complétion sur 7.
@@ -254,10 +254,10 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('c0000000-0000-0000-0000-00000000000e', 'e@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, deadline_time, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, deadline_time, created_at)
 values ('c0000000-0000-0000-0000-00000000eeee',
         'c0000000-0000-0000-0000-00000000000e', 'quête régulière', 'END', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb,
+        'daily', 1,
         (now() + interval '28 minutes')::time, now() - interval '10 days');
 
 -- 7 jours d'historique quasi parfait (rate > 85%).

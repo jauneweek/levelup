@@ -471,6 +471,16 @@ body::before {
   color: var(--amber);
   font-variant-numeric: tabular-nums;
 }
+/* Quota de la période — « 2/3 ». Violet plein : c'est une progression, pas une
+   contrainte de temps (ambre) ni une récompense (cyan). */
+.quest-chip--quota {
+  border-color: rgba(124, 58, 237, 0.65);
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--text-primary);
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
 
 /* ---- Bouton de check : NEUTRE (vide) → FAIT (plein + ✓) ---- */
 .quest-check {

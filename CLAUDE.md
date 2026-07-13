@@ -9,7 +9,15 @@ Habit tracker gamifié style Solo Leveling. PWA Next.js + Supabase + Vercel. Zé
 - DA : `SPEC.md §9` (tokens, composant Fenêtre Système, grammaire des couleurs) + mockups de référence dans `design/mockups/`. Utilise la skill frontend-design. Jamais de Tailwind générique : hexagones, corner brackets, glow violet.
 
 ## Milestone en cours
-> **M8 — Planification par quota** (en cours, branche `m8-planification`) : récurrence (journalière/hebdo/mensuelle/annuelle/unique) + fréquence 1-10, pénalités en fin de période, journée neutre. Amende le SPEC §3.5 + §5. — Avant : **M7 — Polish** Fait : refonte navigation 4 onglets (Hub / Quêtes / Rituel / Profil) + 1ère passe de fidélité UI aux mockups (badge de rang héros, flamme de série, radar, cartes de quête, fenêtres glow) + fix safe-area iOS. **Restent** : animations plein écran rank-up / extraction d'Ombre, onboarding complet, sons, et poursuite de la fidélité mockups + UX gestion des habitudes (encore dans un panneau repliable).
+> **M8 — Planification par quota : FAIT** (branche `m8-planification`, migration `0008`). `recurrence` (daily/weekly/monthly/yearly/once) + `frequency` 1-10 + `temporary` remplacent `schedule.days` (colonne **supprimée**). Pénalités jugées en fin de période (`period_closures`, idempotent), **journée neutre**, quota journalier > 1 (`habit_logs.completions`). 203 assertions pgTAP vertes.
+>
+> **Prochain : gros travail UI/UX** (demandé par le user — l'UI actuelle ne lui plaît pas), puis **muscu**. Le reste de la roadmap est dans `ROADMAP.md`.
+>
+> Avant : **M7 — Polish** Fait : nav 4 onglets, 1ère passe de fidélité mockups, fix safe-area iOS, **perf** (région Vercel, loading.tsx, dédup auth), **sound design** (Web Audio, 13 clips). **Restent** : animations plein écran rank-up / extraction d'Ombre, onboarding complet.
+
+## Décisions de game design prises (à spécifier le jour où on les construit)
+- **Rangs = prestige à 100 niveaux.** Chaque rang contient 100 niveaux ; au 100e on passe au rang suivant et le niveau repart à 1. ⚠️ Conséquence à ne pas rater : le niveau global est aujourd'hui la *moyenne des 5 stats*, et monter une stat au niveau 100 coûte ~3,9 M d'XP — un rang à 100 niveaux impose donc un **compteur d'XP du Chasseur séparé**, avec sa propre courbe. **Les 5 stats ne se réinitialisent JAMAIS** (miroir de la vraie vie + §8) ; seul le Niveau du Chasseur repart à zéro, et un rang qui monte est une promotion, jamais une perte.
+- Reporté par le user : boss, cosmétiques, personnage, donjons. Priorité = constance dans les habitudes + gamification.
 
 Workflow : une branche par milestone (`m0-socle`, `m1-core-loop`…), PR à la fin, on ne commence pas le milestone suivant sans mon GO.
 

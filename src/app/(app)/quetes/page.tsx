@@ -10,7 +10,6 @@ import {
 } from "@/components/quests-view";
 import { type StatCode } from "@/lib/xp";
 import { getDayState } from "@/lib/quests";
-import { todayInTimezone } from "@/lib/date";
 
 function rewardLabel(reward: Record<string, unknown>): string {
   if (reward?.type === "xp_bonus") return `+${reward.amount} XP ${reward.stat}`;
@@ -24,47 +23,38 @@ export default async function QuetesPage() {
   if (!user) redirect("/login");
 
   const day = await getDayState();
-  const timezone = day?.timezone ?? "UTC";
   const today = day?.today ?? "";
-  const { isoWeekday } = todayInTimezone(timezone);
 
-  const [{ count: expressCount }, { data: weeklyRaw }, { data: boss }, { data: allHabits }] =
-    await Promise.all([
-      supabase
-        .from("habit_logs")
-        .select("id", { count: "exact", head: true })
-        .eq("date", today)
-        .eq("is_express", true),
-      supabase
-        .from("quests")
-        .select("id, definition, progress, target, reward")
-        .eq("type", "weekly")
-        .eq("status", "active"),
-      supabase
-        .from("boss_fights")
-        .select("hp, max_hp, spawned_on")
-        .eq("status", "active")
-        .maybeSingle(),
-      supabase
-        .from("habits")
-        .select("id, name, stat, difficulty, deadline_time, minimal_version, active, schedule")
-        .order("created_at", { ascending: true }),
-    ]);
+  const [{ data: weeklyRaw }, { data: boss }] = await Promise.all([
+    supabase
+      .from("quests")
+      .select("id, definition, progress, target, reward")
+      .eq("type", "weekly")
+      .eq("status", "active"),
+    supabase
+      .from("boss_fights")
+      .select("hp, max_hp, spawned_on")
+      .eq("status", "active")
+      .maybeSingle(),
+  ]);
 
-  const doneHabitIds = new Set((day?.habits ?? []).filter((h) => h.done).map((h) => h.id));
-
-  const habits: QuestHabit[] = (allHabits ?? []).map((h) => ({
+  // Plus de « programmée aujourd'hui » : sous le quota, une quête est proposée
+  // tant que son quota de la période n'est pas rempli. `get_day_state` a déjà
+  // tranché côté serveur — le client n'a rien à recalculer.
+  const habits: QuestHabit[] = (day?.habits ?? []).map((h) => ({
     id: h.id,
     name: h.name,
-    stat: h.stat as StatCode,
-    difficulty: h.difficulty as "easy" | "medium" | "hard",
+    stat: h.stat,
+    difficulty: h.difficulty,
     deadline_time: h.deadline_time,
     minimal_version: h.minimal_version,
-    active: h.active,
-    schedule: (h.schedule ?? { days: [] }) as { days: number[] },
-    done: doneHabitIds.has(h.id),
-    scheduledToday:
-      h.active && ((h.schedule?.days as number[] | undefined) ?? []).includes(isoWeekday),
+    recurrence: h.recurrence,
+    frequency: h.frequency,
+    temporary: h.temporary,
+    doneInPeriod: h.doneInPeriod,
+    remaining: h.remaining,
+    active: true,
+    done: h.done,
   }));
 
   const todos: QuestTodo[] = (day?.todos ?? []).map((t) => ({
@@ -105,7 +95,7 @@ export default async function QuetesPage() {
         todos={todos}
         weekly={weekly}
         boss={bossState}
-        expressLeft={Math.max(0, 2 - (expressCount ?? 0))}
+        expressLeft={day?.expressLeft ?? 2}
       />
     </div>
   );

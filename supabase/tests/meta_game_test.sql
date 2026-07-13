@@ -15,10 +15,10 @@ select plan(59);
 insert into auth.users (id, email, raw_user_meta_data)
 values ('c1111111-1111-1111-1111-111111111111', 'a@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, created_at)
 values ('c2222222-2222-2222-2222-222222222222',
         'c1111111-1111-1111-1111-111111111111', 'quête A', 'FOR', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2025-01-01');
+        'daily', 1, '2025-01-01');
 
 do $$
 declare d date;
@@ -69,10 +69,10 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('c3333333-3333-3333-3333-333333333333', 'b@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, created_at)
 values ('c4444444-4444-4444-4444-444444444444',
         'c3333333-3333-3333-3333-333333333333', 'quête B', 'FOR', 'medium',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2025-01-01');
+        'daily', 1, '2025-01-01');
 
 -- Padding : garde completion_rate_7d au-dessus de 40% pendant les 3 jours
 -- d'abus (évite le mode slump, qui neutraliserait l'escalade et le boss).
@@ -184,10 +184,10 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('c5555555-5555-5555-5555-555555555555', 'c@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, created_at)
 values ('c6666666-6666-6666-6666-666666666666',
         'c5555555-5555-5555-5555-555555555555', 'quête C', 'FOR', 'medium',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2025-01-01');
+        'daily', 1, '2025-01-01');
 
 update user_stats set current_xp = 500
   where user_id = 'c5555555-5555-5555-5555-555555555555' and stat = 'SAG';
@@ -259,10 +259,10 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('c7777777-7777-7777-7777-777777777777', 'd@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, created_at)
 values ('c8888888-8888-8888-8888-888888888888',
         'c7777777-7777-7777-7777-777777777777', 'quête D', 'FOR', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2025-01-01');
+        'daily', 1, '2025-01-01');
 
 -- 9 journées parfaites : streak=9, pas de bouclier gagné (palier 10 non atteint).
 do $$
@@ -344,17 +344,17 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('c9999999-9999-9999-9999-999999999999', 'e1@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency)
 values
   ('caaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
    'c9999999-9999-9999-9999-999999999999', 'rush E', 'FOR', 'medium',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb),
+   'daily', 1),
   ('cbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
    'c9999999-9999-9999-9999-999999999999', 'neutre E', 'INT', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb),
+   'daily', 1),
   ('ccccccc0-cccc-cccc-cccc-cccccccccccc',
    'c9999999-9999-9999-9999-999999999999', 'dernière E', 'SAG', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb);
+   'daily', 1);
 
 insert into events_log (user_id, event_type, date, payload)
 values
@@ -413,10 +413,10 @@ select ok(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('cd000001-0000-0000-0000-000000000001', 'e2@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, created_at)
 values ('cd000002-0000-0000-0000-000000000002',
         'cd000001-0000-0000-0000-000000000001', 'quête E2', 'FOR', 'medium',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2025-01-01');
+        'daily', 1, '2025-01-01');
 
 do $$
 declare d date;
@@ -452,14 +452,14 @@ select is(
 -- F1 : bonus XP x2.
 insert into auth.users (id, email, raw_user_meta_data)
 values ('cf000001-0000-0000-0000-000000000001', 'f1@test.dev', '{"timezone":"UTC"}'::jsonb);
-insert into habits (id, user_id, name, stat, difficulty, schedule)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency)
 values
   ('cf000002-0000-0000-0000-000000000002',
    'cf000001-0000-0000-0000-000000000001', 'secrète F1a', 'FOR', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb),
+   'daily', 1),
   ('cf000003-0000-0000-0000-000000000003',
    'cf000001-0000-0000-0000-000000000001', 'secrète F1b', 'INT', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb);
+   'daily', 1);
 insert into secret_quests (user_id, date, target_type, target_id, reward)
 values ('cf000001-0000-0000-0000-000000000001', current_date, 'habit',
         'cf000002-0000-0000-0000-000000000002', jsonb_build_object('type', 'xp_double'));
@@ -487,10 +487,10 @@ select is(
 -- F2 : bonus item.
 insert into auth.users (id, email, raw_user_meta_data)
 values ('cf000011-0000-0000-0000-000000000011', 'f2@test.dev', '{"timezone":"UTC"}'::jsonb);
-insert into habits (id, user_id, name, stat, difficulty, schedule)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency)
 values ('cf000012-0000-0000-0000-000000000012',
         'cf000011-0000-0000-0000-000000000011', 'secrète F2', 'PRO', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb);
+        'daily', 1);
 insert into secret_quests (user_id, date, target_type, target_id, reward)
 values ('cf000011-0000-0000-0000-000000000011', current_date, 'habit',
         'cf000012-0000-0000-0000-000000000012', jsonb_build_object('type', 'item', 'rarity', 'common'));
@@ -515,10 +515,10 @@ select ok(
 -- F3 : bonus bouclier.
 insert into auth.users (id, email, raw_user_meta_data)
 values ('cf000021-0000-0000-0000-000000000021', 'f3@test.dev', '{"timezone":"UTC"}'::jsonb);
-insert into habits (id, user_id, name, stat, difficulty, schedule)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency)
 values ('cf000022-0000-0000-0000-000000000022',
         'cf000021-0000-0000-0000-000000000021', 'secrète F3', 'END', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb);
+        'daily', 1);
 insert into secret_quests (user_id, date, target_type, target_id, reward)
 values ('cf000021-0000-0000-0000-000000000021', current_date, 'habit',
         'cf000022-0000-0000-0000-000000000022', jsonb_build_object('type', 'shield'));
@@ -543,17 +543,17 @@ select is(
 -- ============================================================================
 insert into auth.users (id, email, raw_user_meta_data)
 values ('ce900001-0000-0000-0000-000000000001', 'g@test.dev', '{"timezone":"UTC"}'::jsonb);
-insert into habits (id, user_id, name, stat, difficulty, schedule)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency)
 values
   ('ce900002-0000-0000-0000-000000000002',
    'ce900001-0000-0000-0000-000000000001', 'quête hebdo G1', 'FOR', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb),
+   'daily', 1),
   ('ce900003-0000-0000-0000-000000000003',
    'ce900001-0000-0000-0000-000000000001', 'quête hebdo G2', 'FOR', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb),
+   'daily', 1),
   ('ce900004-0000-0000-0000-000000000004',
    'ce900001-0000-0000-0000-000000000001', 'quête hebdo G3', 'INT', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb);
+   'daily', 1);
 
 select generate_weekly_quests('ce900001-0000-0000-0000-000000000001', '2026-01-05');
 

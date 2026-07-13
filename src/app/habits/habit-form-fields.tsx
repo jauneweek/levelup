@@ -1,20 +1,22 @@
-import type { StatCode } from "@/lib/xp";
-import { STAT_LABELS } from "@/lib/xp";
+"use client";
+
+import { useState } from "react";
+import { STAT_LABELS, type StatCode } from "@/lib/xp";
+import { PERIOD_NOUN, RECURRENCE_LABELS, type Recurrence } from "@/lib/recurrence";
 
 const inputClass =
   "w-full rounded border border-border-glow bg-black/30 px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-cyan focus:ring-1 focus:ring-cyan";
 
-const DAYS: { value: number; label: string }[] = [
-  { value: 1, label: "Lun" },
-  { value: 2, label: "Mar" },
-  { value: 3, label: "Mer" },
-  { value: 4, label: "Jeu" },
-  { value: 5, label: "Ven" },
-  { value: 6, label: "Sam" },
-  { value: 7, label: "Dim" },
-];
-
 const STATS = Object.keys(STAT_LABELS) as StatCode[];
+const RECURRENCES = Object.keys(RECURRENCE_LABELS) as Recurrence[];
+
+const TEMPORARY_HINT: Record<Recurrence, string> = {
+  daily: "Archivée dès ce soir : la période d'une quête journalière, c'est le jour même.",
+  weekly: "Archivée dimanche soir, à la clôture de la semaine.",
+  monthly: "Archivée à la fin du mois.",
+  yearly: "Archivée à la fin de l'année.",
+  once: "Sans effet ici : une quête unique disparaît déjà une fois accomplie.",
+};
 
 type HabitFormFieldsProps = {
   defaultValues?: {
@@ -23,13 +25,21 @@ type HabitFormFieldsProps = {
     difficulty?: "easy" | "medium" | "hard";
     deadline_time?: string | null;
     minimal_version?: string | null;
-    days?: number[];
+    recurrence?: Recurrence;
+    frequency?: number;
+    temporary?: boolean;
   };
   idPrefix: string;
 };
 
 export function HabitFormFields({ defaultValues, idPrefix }: HabitFormFieldsProps) {
-  const selectedDays = new Set(defaultValues?.days ?? [1, 2, 3, 4, 5, 6, 7]);
+  const [recurrence, setRecurrence] = useState<Recurrence>(
+    defaultValues?.recurrence ?? "daily",
+  );
+  const [frequency, setFrequency] = useState<number>(defaultValues?.frequency ?? 1);
+
+  // Une quête unique se fait une fois, par définition : le quota n'a pas de sens.
+  const showFrequency = recurrence !== "once";
 
   return (
     <div className="space-y-3">
@@ -50,7 +60,7 @@ export function HabitFormFields({ defaultValues, idPrefix }: HabitFormFieldsProp
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label htmlFor={`${idPrefix}-stat`} className="text-xs text-text-muted">
-            Statistique
+            Arc
           </label>
           <select
             id={`${idPrefix}-stat`}
@@ -83,6 +93,74 @@ export function HabitFormFields({ defaultValues, idPrefix }: HabitFormFieldsProp
         </div>
       </div>
 
+      {/* ── Le quota : la mécanique centrale. Aucun jour n'est imposé. ── */}
+      <div className="space-y-1">
+        <label htmlFor={`${idPrefix}-recurrence`} className="text-xs text-text-muted">
+          Récurrence
+        </label>
+        <select
+          id={`${idPrefix}-recurrence`}
+          name="recurrence"
+          value={recurrence}
+          onChange={(e) => setRecurrence(e.target.value as Recurrence)}
+          className={inputClass}
+        >
+          {RECURRENCES.map((r) => (
+            <option key={r} value={r}>
+              {RECURRENCE_LABELS[r]}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {showFrequency ? (
+        <div className="space-y-1.5">
+          <label htmlFor={`${idPrefix}-frequency`} className="text-xs text-text-muted">
+            Fréquence —{" "}
+            <b className="text-cyan">
+              {frequency} fois par {PERIOD_NOUN[recurrence]}
+            </b>
+          </label>
+          <input
+            id={`${idPrefix}-frequency`}
+            name="frequency"
+            type="range"
+            min={1}
+            max={10}
+            step={1}
+            value={frequency}
+            onChange={(e) => setFrequency(Number(e.target.value))}
+            className="w-full accent-cyan"
+          />
+          <p className="text-[11px] leading-snug text-text-muted">
+            Aucun jour n&apos;est imposé : la quête reste proposée tant que son quota
+            de la période n&apos;est pas atteint.
+          </p>
+        </div>
+      ) : (
+        <input type="hidden" name="frequency" value={1} />
+      )}
+
+      <label className="flex items-start gap-2.5 rounded border border-border-glow px-3 py-2.5 text-xs text-text-muted has-[:checked]:border-cyan has-[:checked]:text-cyan">
+        <input
+          type="checkbox"
+          name="temporary"
+          value="true"
+          defaultChecked={defaultValues?.temporary ?? false}
+          className="mt-0.5 accent-cyan"
+        />
+        <span>
+          Quête temporaire
+          {/* On dit QUAND elle disparaît, pas « à la fin de sa période » : la
+              période d'une quête journalière, c'est le jour même — une
+              temporaire journalière s'archive donc ce soir. Personne ne devine
+              ça tout seul. */}
+          <span className="mt-0.5 block text-[11px] text-text-muted">
+            {TEMPORARY_HINT[recurrence]}
+          </span>
+        </span>
+      </label>
+
       <div className="space-y-1">
         <label htmlFor={`${idPrefix}-deadline`} className="text-xs text-text-muted">
           Heure limite (optionnel)
@@ -94,6 +172,13 @@ export function HabitFormFields({ defaultValues, idPrefix }: HabitFormFieldsProp
           defaultValue={defaultValues?.deadline_time ?? ""}
           className={inputClass}
         />
+        {recurrence !== "daily" && (
+          <p className="text-[11px] leading-snug text-amber">
+            Les rappels d&apos;heure limite ne concernent que les quêtes journalières —
+            une quête {RECURRENCE_LABELS[recurrence].toLowerCase()} n&apos;est en retard
+            aucun jour en particulier.
+          </p>
+        )}
       </div>
 
       <div className="space-y-1">
@@ -107,27 +192,6 @@ export function HabitFormFields({ defaultValues, idPrefix }: HabitFormFieldsProp
           className={inputClass}
           placeholder="Ex. 2 pages, 5 pompes, 2 min de méditation"
         />
-      </div>
-
-      <div className="space-y-1">
-        <span className="text-xs text-text-muted">Jours actifs</span>
-        <div className="flex flex-wrap gap-2">
-          {DAYS.map((d) => (
-            <label
-              key={d.value}
-              className="flex items-center gap-1.5 rounded border border-border-glow px-2 py-1 text-xs text-text-muted has-[:checked]:border-cyan has-[:checked]:text-cyan"
-            >
-              <input
-                type="checkbox"
-                name="days"
-                value={d.value}
-                defaultChecked={selectedDays.has(d.value)}
-                className="accent-cyan"
-              />
-              {d.label}
-            </label>
-          ))}
-        </div>
       </div>
     </div>
   );

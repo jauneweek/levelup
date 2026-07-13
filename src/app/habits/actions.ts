@@ -6,12 +6,30 @@ import { parseCompleteResult, type CompleteResult } from "@/lib/complete-result"
 import type { StatCode } from "@/lib/xp";
 
 type Difficulty = "easy" | "medium" | "hard";
+type Recurrence = "daily" | "weekly" | "monthly" | "yearly" | "once";
 
-function parseDays(formData: FormData): number[] {
-  return formData
-    .getAll("days")
-    .map((d) => Number(d))
-    .filter((d) => d >= 1 && d <= 7);
+const RECURRENCES: Recurrence[] = ["daily", "weekly", "monthly", "yearly", "once"];
+
+/** Le quota tel que la base l'exige : récurrence valide, fréquence 1..10, et
+ *  une quête unique qui ne se fait qu'une fois (contrainte `habits_once_is_single`). */
+function parseQuota(formData: FormData): {
+  recurrence: Recurrence;
+  frequency: number;
+  temporary: boolean;
+} {
+  const raw = String(formData.get("recurrence") ?? "daily") as Recurrence;
+  const recurrence = RECURRENCES.includes(raw) ? raw : "daily";
+
+  const frequency =
+    recurrence === "once"
+      ? 1
+      : Math.min(10, Math.max(1, Number(formData.get("frequency") ?? 1) || 1));
+
+  return {
+    recurrence,
+    frequency,
+    temporary: formData.get("temporary") === "true",
+  };
 }
 
 export async function createHabit(formData: FormData) {
@@ -26,7 +44,7 @@ export async function createHabit(formData: FormData) {
   const difficulty = String(formData.get("difficulty") ?? "easy") as Difficulty;
   const deadlineRaw = String(formData.get("deadline_time") ?? "").trim();
   const minimalVersion = String(formData.get("minimal_version") ?? "").trim();
-  const days = parseDays(formData);
+  const quota = parseQuota(formData);
 
   if (!name) throw new Error("le nom de la quête est requis");
 
@@ -37,7 +55,7 @@ export async function createHabit(formData: FormData) {
     difficulty,
     deadline_time: deadlineRaw || null,
     minimal_version: minimalVersion || null,
-    schedule: { days: days.length > 0 ? days : [1, 2, 3, 4, 5, 6, 7] },
+    ...quota,
   });
   if (error) throw new Error(error.message);
 
@@ -55,7 +73,7 @@ export async function updateHabit(formData: FormData) {
   const difficulty = String(formData.get("difficulty") ?? "easy") as Difficulty;
   const deadlineRaw = String(formData.get("deadline_time") ?? "").trim();
   const minimalVersion = String(formData.get("minimal_version") ?? "").trim();
-  const days = parseDays(formData);
+  const quota = parseQuota(formData);
 
   if (!name) throw new Error("le nom de la quête est requis");
 
@@ -67,7 +85,7 @@ export async function updateHabit(formData: FormData) {
       difficulty,
       deadline_time: deadlineRaw || null,
       minimal_version: minimalVersion || null,
-      schedule: { days: days.length > 0 ? days : [1, 2, 3, 4, 5, 6, 7] },
+      ...quota,
     })
     .eq("id", habitId);
   if (error) throw new Error(error.message);

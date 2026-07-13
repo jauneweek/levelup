@@ -16,14 +16,14 @@ select plan(29);
 insert into auth.users (id, email, raw_user_meta_data)
 values ('da111111-1111-1111-1111-111111111111', 'a@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency)
 values
   ('da222222-2222-2222-2222-222222222222',
    'da111111-1111-1111-1111-111111111111', 'quête A FOR', 'FOR', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb),
+   'daily', 1),
   ('da222223-2222-2222-2222-222222222223',
    'da111111-1111-1111-1111-111111111111', 'quête A INT', 'INT', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb);
+   'daily', 1);
 
 insert into todos (id, user_id, title, stat, difficulty, date)
 values ('da333333-3333-3333-3333-333333333333',
@@ -136,20 +136,20 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('dc111111-1111-1111-1111-111111111111', 'c@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, minimal_version)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, minimal_version)
 values
   ('dc222222-2222-2222-2222-222222222222',
    'dc111111-1111-1111-1111-111111111111', 'quête C1', 'FOR', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb, '5 pompes'),
+   'daily', 1, '5 pompes'),
   ('dc333333-3333-3333-3333-333333333333',
    'dc111111-1111-1111-1111-111111111111', 'quête C2', 'INT', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2 pages'),
+   'daily', 1, '2 pages'),
   ('dc444444-4444-4444-4444-444444444444',
    'dc111111-1111-1111-1111-111111111111', 'quête C3', 'SAG', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2 min de méditation'),
+   'daily', 1, '2 min de méditation'),
   ('dc555555-5555-5555-5555-555555555555',
    'dc111111-1111-1111-1111-111111111111', 'quête C4 sans version min', 'PRO', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb, null);
+   'daily', 1, null);
 
 -- Quête hebdo FOR, pour vérifier qu'une complétion express la fait progresser
 -- (contrairement aux todos, ci-dessus — l'express reste une vraie complétion
@@ -209,10 +209,10 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('dd111111-1111-1111-1111-111111111111', 'd@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, created_at)
 values ('dd222222-2222-2222-2222-222222222222',
         'dd111111-1111-1111-1111-111111111111', 'quête D', 'FOR', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2025-01-01');
+        'daily', 1, '2025-01-01');
 
 update user_stats set current_xp = 100
   where user_id = 'dd111111-1111-1111-1111-111111111111' and stat = 'INT';

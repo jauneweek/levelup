@@ -7,6 +7,7 @@ import { StatIcon } from "@/components/stat-icon";
 import { completeHabit, completeHabitExpress } from "@/app/habits/actions";
 import { completeTodo } from "@/app/todos/actions";
 import type { CompleteResult } from "@/lib/complete-result";
+import { RECURRENCE_SHORT, type Recurrence } from "@/lib/recurrence";
 import { haptic } from "@/lib/haptics";
 import { playCheck, playError, playLevelUp } from "@/lib/sound";
 
@@ -24,6 +25,10 @@ type QuestCardProps = {
   /** Heure limite « HH:MM » — rendue en chip dédié, jamais tronquée. */
   deadline?: string | null;
   express?: string | null;
+  /** Quota (M8). Absents pour une todo. */
+  recurrence?: Recurrence;
+  frequency?: number;
+  doneInPeriod?: number;
   /** Quêtes déjà validées aujourd'hui, et restantes (celle-ci comprise).
    *  Sert à choisir le son de check : premier / courant / dernier du jour. */
   dayDone: number;
@@ -41,19 +46,29 @@ export function QuestCard({
   done,
   deadline,
   express,
+  recurrence,
+  frequency = 1,
+  doneInPeriod = 0,
   dayDone,
   dayPending,
   onEdit,
 }: QuestCardProps) {
   const router = useRouter();
+  /* Deux drapeaux distincts, et c'est volontaire :
+     - `slashing` pilote l'ANIMATION ; elle a sa propre durée et ne doit rien
+       devoir au réseau ;
+     - `busy` est la GARDE anti double-envoi ; elle dure le temps de la requête.
+     Les confondre rendait la carte inerte après le premier check — invisible
+     tant qu'une quête se validait une seule fois, mais fatal avec un quota ×3. */
   const [slashing, setSlashing] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [, startTransition] = useTransition();
 
   function run(
     action: (fd: FormData) => Promise<CompleteResult | null>,
     field: string,
   ) {
-    if (slashing || done) return;
+    if (busy || done) return;
 
     // Retour immédiat, DANS le geste : haptique + son partent avant même que la
     // requête ne soit lancée. Un son qui attend le serveur n'est plus une
@@ -61,7 +76,10 @@ export function QuestCard({
     haptic("success");
     playCheck({ isFirstOfDay: dayDone === 0, isLastOfDay: dayPending <= 1 });
 
+    setBusy(true);
     setSlashing(true);
+    if (!REDUCED) setTimeout(() => setSlashing(false), 1000); // durée de l'anim
+
     setTimeout(
       () => {
         const fd = new FormData();
@@ -74,11 +92,10 @@ export function QuestCard({
             if (res?.leveledUp) playLevelUp(res.statLevel);
             router.refresh();
           } catch {
-            // Sans ça, une action en échec laissait la carte figée en
-            // « slashing » : plus aucun moyen de valider la quête.
             haptic("warn");
             playError();
-            setSlashing(false);
+          } finally {
+            setBusy(false);
           }
         });
       },
@@ -130,6 +147,19 @@ export function QuestCard({
         <span className="mt-1 flex flex-wrap items-center gap-1.5">
           <span className="quest-chip quest-chip--xp">+{xp} XP</span>
           <span className="quest-chip">{STAT_LABELS[stat]}</span>
+
+          {/* Quota : n'a de sens à afficher que s'il vaut plus qu'une fois. */}
+          {frequency > 1 && (
+            <span className="quest-chip quest-chip--quota">
+              {Math.min(doneInPeriod, frequency)}/{frequency}
+            </span>
+          )}
+          {/* La récurrence ne s'affiche que si elle sort de l'ordinaire : tout
+              écrire « Journalière » sur chaque carte serait du bruit. */}
+          {recurrence && recurrence !== "daily" && (
+            <span className="quest-chip">{RECURRENCE_SHORT[recurrence]}</span>
+          )}
+
           {deadline && <span className="quest-chip quest-chip--time">⏱ {deadline}</span>}
           {kind === "todo" && <span className="quest-chip">todo</span>}
         </span>

@@ -14,10 +14,10 @@ select plan(24);
 insert into auth.users (id, email, raw_user_meta_data)
 values ('55555555-5555-5555-5555-555555555555', 'u@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, created_at)
 values ('66666666-6666-6666-6666-666666666666',
         '55555555-5555-5555-5555-555555555555', 'quête U', 'FOR', 'hard',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2025-01-01');
+        'daily', 1, '2025-01-01');
 
 -- current_xp de départ suffisamment haut pour observer la progression, puis
 -- suffisamment bas pour tester le plancher 0 au 4e jour d'abus.
@@ -140,10 +140,10 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('77777777-7777-7777-7777-777777777777', 'v@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, created_at)
 values ('88888888-8888-8888-8888-888888888888',
         '77777777-7777-7777-7777-777777777777', 'quête V', 'INT', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2025-01-01');
+        'daily', 1, '2025-01-01');
 
 -- 10 journées parfaites consécutives (2026-02-01 .. 2026-02-10).
 do $$
@@ -194,14 +194,14 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('99999999-9999-9999-9999-999999999999', 'w@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency)
 values
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
    '99999999-9999-9999-9999-999999999999', 'facile W', 'FOR', 'easy',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb),
+   'daily', 1),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
    '99999999-9999-9999-9999-999999999999', 'moyenne W', 'INT', 'medium',
-   '{"days":[1,2,3,4,5,6,7]}'::jsonb);
+   'daily', 1);
 
 select set_config(
   'request.jwt.claims',

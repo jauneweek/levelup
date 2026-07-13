@@ -5,6 +5,7 @@ import { SystemModal } from "@/components/system-modal";
 import { HabitFormFields } from "@/app/habits/habit-form-fields";
 import { createHabit, updateHabit, toggleHabitActive, deleteHabit } from "@/app/habits/actions";
 import { haptic } from "@/lib/haptics";
+import type { Recurrence } from "@/lib/recurrence";
 import type { StatCode } from "@/lib/xp";
 
 export type EditableHabit = {
@@ -15,7 +16,9 @@ export type EditableHabit = {
   deadline_time: string | null;
   minimal_version: string | null;
   active: boolean;
-  schedule: { days: number[] };
+  recurrence: Recurrence;
+  frequency: number;
+  temporary: boolean;
 };
 
 /** Création / édition d'une quête récurrente (remplace le panneau repliable). */
@@ -50,7 +53,9 @@ export function HabitModal({
                   difficulty: habit!.difficulty,
                   deadline_time: habit!.deadline_time,
                   minimal_version: habit!.minimal_version,
-                  days: habit!.schedule?.days,
+                  recurrence: habit!.recurrence,
+                  frequency: habit!.frequency,
+                  temporary: habit!.temporary,
                 }
               : undefined
           }

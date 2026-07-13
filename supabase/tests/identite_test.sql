@@ -15,10 +15,10 @@ select plan(27);
 insert into auth.users (id, email, raw_user_meta_data)
 values ('ea111111-1111-1111-1111-111111111111', 'a@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, created_at)
 values ('ea222222-2222-2222-2222-222222222222',
         'ea111111-1111-1111-1111-111111111111', 'Méditation quotidienne', 'SAG', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2019-01-01');
+        'daily', 1, '2019-01-01');
 
 -- 99 complétions : pas encore d'Ombre.
 do $$
@@ -94,15 +94,15 @@ select is(
 insert into auth.users (id, email, raw_user_meta_data)
 values ('eb111111-1111-1111-1111-111111111111', 'b@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency)
 values
-  ('eb222221-2222-2222-2222-222222222221', 'eb111111-1111-1111-1111-111111111111', 'h1', 'FOR', 'easy', '{"days":[1,2,3,4,5,6,7]}'::jsonb),
-  ('eb222222-2222-2222-2222-222222222222', 'eb111111-1111-1111-1111-111111111111', 'h2', 'FOR', 'easy', '{"days":[1,2,3,4,5,6,7]}'::jsonb),
-  ('eb222223-2222-2222-2222-222222222223', 'eb111111-1111-1111-1111-111111111111', 'h3', 'FOR', 'easy', '{"days":[1,2,3,4,5,6,7]}'::jsonb),
-  ('eb222224-2222-2222-2222-222222222224', 'eb111111-1111-1111-1111-111111111111', 'h4', 'FOR', 'easy', '{"days":[1,2,3,4,5,6,7]}'::jsonb),
-  ('eb222225-2222-2222-2222-222222222225', 'eb111111-1111-1111-1111-111111111111', 'h5', 'FOR', 'easy', '{"days":[1,2,3,4,5,6,7]}'::jsonb),
-  ('eb222226-2222-2222-2222-222222222226', 'eb111111-1111-1111-1111-111111111111', 'h6', 'FOR', 'easy', '{"days":[1,2,3,4,5,6,7]}'::jsonb),
-  ('eb222227-2222-2222-2222-222222222227', 'eb111111-1111-1111-1111-111111111111', 'cible', 'FOR', 'easy', '{"days":[1,2,3,4,5,6,7]}'::jsonb);
+  ('eb222221-2222-2222-2222-222222222221', 'eb111111-1111-1111-1111-111111111111', 'h1', 'FOR', 'easy', 'daily', 1),
+  ('eb222222-2222-2222-2222-222222222222', 'eb111111-1111-1111-1111-111111111111', 'h2', 'FOR', 'easy', 'daily', 1),
+  ('eb222223-2222-2222-2222-222222222223', 'eb111111-1111-1111-1111-111111111111', 'h3', 'FOR', 'easy', 'daily', 1),
+  ('eb222224-2222-2222-2222-222222222224', 'eb111111-1111-1111-1111-111111111111', 'h4', 'FOR', 'easy', 'daily', 1),
+  ('eb222225-2222-2222-2222-222222222225', 'eb111111-1111-1111-1111-111111111111', 'h5', 'FOR', 'easy', 'daily', 1),
+  ('eb222226-2222-2222-2222-222222222226', 'eb111111-1111-1111-1111-111111111111', 'h6', 'FOR', 'easy', 'daily', 1),
+  ('eb222227-2222-2222-2222-222222222227', 'eb111111-1111-1111-1111-111111111111', 'cible', 'FOR', 'easy', 'daily', 1);
 
 -- 3 Ombres (fixtures directes, hors mécanisme d'extraction) -> +6%.
 insert into shadows (user_id, habit_id, name, grade, completions_at_extraction)
@@ -160,10 +160,10 @@ reset role;
 insert into auth.users (id, email, raw_user_meta_data)
 values ('ec111111-1111-1111-1111-111111111111', 'c@test.dev', '{"timezone":"UTC"}'::jsonb);
 
-insert into habits (id, user_id, name, stat, difficulty, schedule, created_at)
+insert into habits (id, user_id, name, stat, difficulty, recurrence, frequency, created_at)
 values ('ec222222-2222-2222-2222-222222222222',
         'ec111111-1111-1111-1111-111111111111', 'quête C', 'FOR', 'easy',
-        '{"days":[1,2,3,4,5,6,7]}'::jsonb, '2025-01-01');
+        'daily', 1, '2025-01-01');
 
 -- 22 journées parfaites (2026-01-18 .. 2026-02-08) : démarrées assez tôt
 -- pour que le taux glissant 7j des deux bornes de comparaison (samedi de
