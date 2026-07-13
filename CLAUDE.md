@@ -9,9 +9,23 @@ Habit tracker gamifié style Solo Leveling. PWA Next.js + Supabase + Vercel. Zé
 - DA : `SPEC.md §9` (tokens, composant Fenêtre Système, grammaire des couleurs) + mockups de référence dans `design/mockups/`. Utilise la skill frontend-design. Jamais de Tailwind générique : hexagones, corner brackets, glow violet.
 
 ## Milestone en cours
-> **M7 — Polish** (en cours : refonte navigation 4 onglets + UI collée aux mockups. Restent : animations rank-up/extraction plein écran, onboarding complet, sons.)
+> **M7 — Polish** (en cours). Fait : refonte navigation 4 onglets (Hub / Quêtes / Rituel / Profil) + 1ère passe de fidélité UI aux mockups (badge de rang héros, flamme de série, radar, cartes de quête, fenêtres glow) + fix safe-area iOS. **Restent** : animations plein écran rank-up / extraction d'Ombre, onboarding complet, sons, et poursuite de la fidélité mockups + UX gestion des habitudes (encore dans un panneau repliable).
 
 Workflow : une branche par milestone (`m0-socle`, `m1-core-loop`…), PR à la fin, on ne commence pas le milestone suivant sans mon GO.
+
+## État d'avancement
+- **M0 → M6 : done, testés (179 assertions pgTAP vertes), et en production.** M7 : partie 1 (nav + UI) faite et déployée ; le reste est à venir.
+- Critères de done validés jusqu'à M6 inclus (boss, quêtes hebdo, todos, donjon express, morning brief, Armée des Ombres, Fantôme, Journal + export image).
+
+## Déploiement (TOUT est en ligne)
+- **Supabase distant** : projet `levelup`, ref **`aqdjpadcoplcxalulllu`** (eu-west-3). Migrations **0001→0007 appliquées**, titres+items seedés (le seed ne passe pas par les migrations, l'appliquer à la main sur le distant), crons `midnight-close` + `send-notifications` (5 min) + `daily-tick` + `weekly-tick` (15 min), Edge Function `send-notifications` **v5** (T-30/T-15 + file événementielle M4). Sécurité vérifiée : seules `complete_habit` / `complete_todo` / `complete_habit_express` exécutables par `authenticated`.
+- **Vercel** : prod = branche **`main`**, URL **`levelup-liart.vercel.app`** (auto-deploy au push sur `main`). Le connecteur MCP Vercel ne voit pas le projet (périmètre OAuth) → passer par `git push origin main`. Env vars (`NEXT_PUBLIC_SUPABASE_URL/ANON_KEY`, `VAPID_PUBLIC_KEY`) réglées côté Vercel depuis M3.
+- **Git** : `main` contient toute la stack M0→M7 (amenée en fast-forward). Les PR #1–#8 restent « ouvertes » (FF direct, non marquées merged sur GitHub) — cosmétique. Branche de travail courante : `m7-refonte-ui`.
+
+## Comment déployer une modif
+- **Frontend/UI** : commit sur la branche de travail → `git checkout main && git merge --ff-only <branche> && git push origin main` → Vercel rebuild (~30-60 s). Vérifier via le CSS compilé en prod (`/_next/static/css/…`).
+- **DB (migrations/SQL)** : le CLI Supabase n'est **pas** authentifié localement (pas de token). Utiliser le **connecteur MCP Supabase** (`apply_migration` / `execute_sql`) sur `aqdjpadcoplcxalulllu`. Toujours refléter le fix dans le fichier de migration versionné aussi.
+- **Vérif en conditions réelles** : signup via l'API GoTrue distante + cookie SSR (`sb-aqdjpadcoplcxalulllu-auth-token`), puis captures via Chrome headless (puppeteer-core, viewport iPhone). Nettoyer le compte de test ensuite. ⚠️ En zsh, ne jamais nommer une variable shell `UID` (lecture seule).
 
 ## Stack & conventions
 - Next.js 15 App Router, TypeScript strict, Tailwind, Framer Motion
