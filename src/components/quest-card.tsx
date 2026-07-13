@@ -56,46 +56,52 @@ export function QuestCard({
 
   return (
     <div
-      className={`relative flex items-center gap-2.5 overflow-hidden border p-3 ${
-        done ? "border-white/5 opacity-45" : "border-border-glow bg-panel/40"
+      className={`relative flex items-center gap-3 overflow-hidden rounded-md border p-3.5 transition-colors ${
+        done
+          ? "border-white/5 opacity-45"
+          : "border-border-glow bg-gradient-to-r from-violet/[0.07] to-transparent"
       } ${slashing ? "is-slashing" : ""}`}
     >
       {kind === "todo" ? (
-        <span className="grid h-[30px] w-[30px] shrink-0 place-items-center text-base">📋</span>
+        <span
+          className="clip-hex grid h-9 w-9 shrink-0 place-items-center text-base"
+          style={{ background: "rgba(124,58,237,0.12)", boxShadow: "inset 0 0 0 1px rgba(124,58,237,0.5)" }}
+        >
+          📋
+        </span>
       ) : (
-        <StatIcon stat={stat} size={30} />
+        <StatIcon stat={stat} size={36} />
       )}
 
       <div className="min-w-0 flex-1">
         <p
           title={name}
-          className={`truncate text-sm text-text-primary ${done ? "line-through" : ""}`}
+          className={`truncate text-[15px] text-text-primary ${done ? "line-through" : ""}`}
         >
           {name}
         </p>
-        <p className="truncate text-xs text-text-muted">
-          {STAT_LABELS[stat]}
-          {meta ? ` · ${meta}` : ""}
+        <p className="truncate text-xs">
+          <span className="font-display tabular-nums text-cyan">+{xp} XP</span>
+          <span className="text-text-muted">
+            {" · "}
+            {STAT_LABELS[stat]}
+            {meta ? ` · ${meta}` : ""}
+          </span>
         </p>
       </div>
 
       {done ? (
-        <span className="font-display shrink-0 text-xs tracking-wide text-cyan tabular-nums">
-          ✓ +{xp}
-        </span>
+        <span className="font-display shrink-0 text-sm tracking-wide text-cyan tabular-nums">✓</span>
       ) : (
         <>
-          <span className="font-display shrink-0 text-xs tracking-wide text-cyan tabular-nums">
-            +{xp}
-            <span className="ml-0.5 text-[10px] text-cyan/70">XP</span>
-          </span>
           {express && (
             <button
               type="button"
               onClick={onExpress}
               title={`Donjon express : ${express}`}
               aria-label={`Donjon express de ${name} : ${express}`}
-              className="focus-ring clip-hex grid h-7 w-7 shrink-0 place-items-center bg-amber/15 text-sm text-amber transition-colors hover:bg-amber/30"
+              className="focus-ring clip-hex grid h-10 w-10 shrink-0 place-items-center bg-amber/15 text-base text-amber transition-colors hover:bg-amber/30"
+              style={{ boxShadow: "inset 0 0 0 1.5px rgba(245,158,11,0.6)" }}
             >
               ⚡
             </button>
@@ -104,7 +110,8 @@ export function QuestCard({
             type="button"
             onClick={onCheck}
             aria-label={`Compléter ${name}`}
-            className="focus-ring clip-hex grid h-7 w-7 shrink-0 place-items-center bg-violet/25 text-sm text-violet/60 transition-colors hover:bg-violet/45 hover:text-cyan"
+            className="focus-ring clip-hex grid h-10 w-10 shrink-0 place-items-center bg-violet/25 text-base text-cyan transition-colors hover:bg-violet/50"
+            style={{ boxShadow: "inset 0 0 0 1.5px rgba(124,58,237,0.75)" }}
           >
             ✓
           </button>

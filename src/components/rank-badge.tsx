@@ -40,17 +40,31 @@ export function RankBadge({
         style={{ background: tone.bg, boxShadow: `inset 0 0 0 2px ${tone.ring}` }}
         aria-hidden
       />
-      <span
-        className="font-display relative"
-        style={{
-          fontSize: size * 0.42,
-          fontWeight: 800,
-          color: tone.text,
-          textShadow: `0 0 12px ${tone.glow}`,
-          lineHeight: 1,
-        }}
-      >
-        {rank}
+      <span className="relative flex flex-col items-center leading-none">
+        <span
+          className="font-display"
+          style={{
+            fontSize: size * 0.12,
+            letterSpacing: "0.25em",
+            color: tone.text,
+            opacity: 0.85,
+            marginBottom: size * 0.02,
+          }}
+        >
+          RANG
+        </span>
+        <span
+          className="font-display"
+          style={{
+            fontSize: size * 0.42,
+            fontWeight: 800,
+            color: tone.text,
+            textShadow: `0 0 12px ${tone.glow}`,
+            lineHeight: 1,
+          }}
+        >
+          {rank}
+        </span>
       </span>
     </div>
   );

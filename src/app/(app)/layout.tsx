@@ -18,7 +18,10 @@ export default async function AppLayout({
 
   return (
     <>
-      <div className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-5">
+      <div
+        className="mx-auto w-full max-w-xl flex-1 px-4 pb-28"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
+      >
         {children}
       </div>
       <TabBar pendingCount={day?.pendingCount ?? 0} />

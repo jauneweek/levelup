@@ -51,10 +51,19 @@ export function StatRadar({
     >
       <defs>
         <radialGradient id="radar-fill" cx="50%" cy="45%" r="60%">
-          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.45" />
+          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.6" />
+          <stop offset="60%" stopColor="#7c3aed" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.35" />
+        </radialGradient>
+        <radialGradient id="radar-core" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#e9d5ff" stopOpacity="0.9" />
+          <stop offset="35%" stopColor="#22d3ee" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
         </radialGradient>
       </defs>
+
+      {/* lueur centrale */}
+      <circle cx={cx} cy={cy} r={R * 0.55} fill="url(#radar-core)" />
 
       {/* anneaux de grille */}
       {[0.34, 0.67, 1].map((ring) => (

@@ -6,7 +6,7 @@ import { StatRadar } from "@/components/stat-radar";
 import { RankBadge } from "@/components/rank-badge";
 import { Blason } from "@/components/blason";
 import { QuestCard } from "@/components/quest-card";
-import { DIFFICULTY_XP, type StatCode } from "@/lib/xp";
+import { DIFFICULTY_XP, xpToNextLevel, type StatCode } from "@/lib/xp";
 import { getDayState } from "@/lib/quests";
 
 const STAT_ORDER: StatCode[] = ["FOR", "INT", "SAG", "PRO", "END"];
@@ -18,6 +18,13 @@ const EVENT_LABELS: Record<string, string> = {
   rush: "⚡ Heure de rush — une quête tirée au sort vaut XP ×2 avant midi.",
   cursed: "🌑 Jour maudit — les pénalités sont doublées aujourd'hui.",
 };
+
+/** Score global = total d'XP cumulée sur les 5 stats (mockup « SCORE GLOBAL »). */
+function cumulativeXp(level: number, currentXp: number): number {
+  let total = currentXp;
+  for (let k = 1; k < level; k++) total += xpToNextLevel(k);
+  return total;
+}
 
 export default async function HubPage() {
   const supabase = await createClient();
@@ -54,6 +61,22 @@ export default async function HubPage() {
   ) as Record<StatCode, number>;
 
   const rank = (profile?.rank ?? "E") as HunterRank;
+  const globalLevel = profile?.global_level ?? 1;
+
+  // Progression globale = moyenne des remplissages d'XP par stat.
+  const aggPct = Math.round(
+    (STAT_ORDER.reduce((sum, c) => {
+      const s = statsByCode.get(c);
+      return sum + (s ? (s.current_xp ?? 0) / xpToNextLevel(s.level ?? 1) : 0);
+    }, 0) /
+      STAT_ORDER.length) *
+      100,
+  );
+  const score = STAT_ORDER.reduce((sum, c) => {
+    const s = statsByCode.get(c);
+    return sum + cumulativeXp(s?.level ?? 1, s?.current_xp ?? 0);
+  }, 0);
+
   const eventLabel = eventToday?.event_type ? EVENT_LABELS[eventToday.event_type] : undefined;
 
   const pendingHabits = (day?.habits ?? []).filter((h) => !h.done);
@@ -63,37 +86,71 @@ export default async function HubPage() {
   const remaining = pendingHabits.length + pendingTodos.length;
 
   return (
-    <div className="space-y-5">
-      {/* ── Hero identité ── */}
+    <div className="relative space-y-5">
+      <div className="app-nebula" aria-hidden />
+
+      {/* ── Hero : rang + niveau + progression ── */}
       <SystemWindow title="Hub du Chasseur">
-        <div className="flex items-center gap-4">
-          <RankBadge rank={rank} size={72} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs text-text-muted">{profile?.username ?? user.email}</p>
-            <p className="font-display text-2xl leading-tight text-text-primary">
-              Niveau {profile?.global_level ?? 1}
-            </p>
-            <p className="mt-0.5 font-display text-xs tracking-widest text-violet">RANG {rank}</p>
+        <div className="flex flex-col items-center pt-2 text-center">
+          <div className="rank-halo">
+            <div className="rank-shards" aria-hidden>
+              <span style={{ top: "6%", left: "12%" }} />
+              <span style={{ top: "14%", right: "8%" }} />
+              <span style={{ bottom: "18%", left: "6%" }} />
+              <span style={{ bottom: "8%", right: "16%" }} />
+            </div>
+            <RankBadge rank={rank} size={104} />
           </div>
-          <Blason emblemDamage={profile?.emblem_damage ?? 0} />
+          <p className="mt-3 font-display text-xs tracking-[0.35em] text-violet">
+            RANG {rank} · CHASSEUR
+          </p>
+          <p className="font-display text-4xl leading-none text-text-primary">
+            NIVEAU {globalLevel}
+          </p>
+          <p className="mt-1 text-xs text-text-muted">{profile?.username ?? user.email}</p>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-muted">
-          <span>
-            🔥 Streak{" "}
-            <b className="font-display tabular-nums text-amber">{globalStreak?.current ?? 0} j</b>
-            <span className="text-text-muted/70"> · record {globalStreak?.best ?? 0}</span>
-          </span>
-          <span>
-            🛡️ Boucliers <b className="text-cyan">{globalStreak?.shields ?? 0}</b>
-          </span>
+        <div className="mt-5">
+          <div className="mb-1.5 flex items-baseline justify-between text-xs">
+            <span className="uppercase tracking-widest text-text-muted">Progression</span>
+            <span className="font-display tabular-nums text-cyan">{aggPct}%</span>
+          </div>
+          <div className="xp-track">
+            <div className="xp-fill" style={{ width: `${aggPct}%` }} />
+          </div>
+          <p className="mt-2.5 text-center text-xs text-text-muted">
+            Score global :{" "}
+            <b className="font-display tabular-nums text-cyan">{score.toLocaleString("fr-FR")}</b>
+          </p>
         </div>
       </SystemWindow>
 
-      {/* ── Radar + XP précise ── */}
+      {/* ── Série (flamme) + blason ── */}
+      <SystemWindow title="Série" showSystemTag={false} tone="amber">
+        <div className="flex items-center gap-4">
+          <div className="flame shrink-0">
+            <span className="flame__glyph" aria-hidden>
+              🔥
+            </span>
+            <span className="flame__num tabular-nums">{globalStreak?.current ?? 0}</span>
+          </div>
+          <div className="flex-1">
+            <p className="font-display text-lg uppercase tracking-wider text-text-primary">
+              Jours de série
+            </p>
+            <p className="mt-0.5 text-xs text-amber">
+              Record : {globalStreak?.best ?? 0} · 🛡️ {globalStreak?.shields ?? 0} bouclier
+              {(globalStreak?.shields ?? 0) > 1 ? "s" : ""}
+            </p>
+          </div>
+          <Blason emblemDamage={profile?.emblem_damage ?? 0} />
+        </div>
+      </SystemWindow>
+
+      {/* ── Radar des stats + détail ── */}
       <SystemWindow title="Statistiques" showSystemTag={false} tone="cyan">
         <div className="flex flex-col items-center">
-          <StatRadar levels={levels} size={244} />
+          <StatRadar levels={levels} size={268} />
         </div>
         <div className="mt-4 space-y-2.5">
           {STAT_ORDER.map((code) => {
@@ -105,7 +162,7 @@ export default async function HubPage() {
         </div>
       </SystemWindow>
 
-      {/* ── Prochaine quête (actionnable) ── */}
+      {/* ── Prochaine quête ── */}
       <SystemWindow title="Prochaine quête" showSystemTag={false}>
         {nextHabit ? (
           <QuestCard
