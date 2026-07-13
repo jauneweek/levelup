@@ -89,11 +89,42 @@ Le passage de rang = moment épique (plein écran, animation "Système").
 
 ### 3.5 Quêtes
 
-- **Quotidiennes** = les habitudes du jour (auto-générées)
-- **Hebdomadaires** (générées lundi 00:00 par règles, 2 par semaine) :
-  - Modèle : "Complète {n} habitudes de {stat} cette semaine" (n = fréquence habituelle + 1)
-  - Récompense : XP bonus (+100) OU titre OU item cosmétique
-- **Quête de rédemption** : proposée après un streak cassé sans bouclier — "3 journées parfaites d'affilée pour restaurer 50% de ton ancien streak"
+#### 3.5.1 Planification par QUOTA (amendement M8 — remplace les jours fixes)
+
+Une quête n'est plus attachée à des jours de la semaine, mais à un **quota par période** :
+
+| Champ | Valeurs |
+|---|---|
+| `recurrence` | `daily` · `weekly` · `monthly` · `yearly` · `once` |
+| `frequency` | 1 à 10 — **nombre de fois par période** |
+| `temporary` | booléen — quête à durée limitée (archivée après sa période) |
+| `stat` (arc) | FOR / INT / SAG / PRO / END |
+| `difficulty` | easy / medium / hard (XP §3.2 inchangé) |
+
+- **Quota libre** : une quête est proposable **tant que son quota de la période courante n'est pas rempli**. Elle n'est due aucun jour précis. Ex. `weekly + 3` = 3 fois dans la semaine, quand tu veux.
+- **Périodes** (toujours en TZ user) : jour civil · semaine ISO (lundi→dimanche) · mois civil · année civile.
+- `once` = quête unique, disparaît une fois complétée.
+
+#### 3.5.2 Pénalités — jugement en FIN DE PÉRIODE
+
+Le Tribunal de minuit (§3.9) ne peut plus juger chaque soir ce qui n'est pas dû chaque soir :
+
+- **Quotas journaliers** : jugés chaque nuit. Manquant = `(quota − complétions) × 40 % de l'XP`.
+- **Quotas hebdo / mensuel / annuel** : jugés **à la clôture de leur période** (dimanche minuit, fin de mois, fin d'année). Même formule sur le manquant.
+- Idempotence : une clôture de période ne peut pas être appliquée deux fois (contrainte unique `habit_id + période`).
+
+#### 3.5.3 Journée parfaite, streak, Boss
+
+La boucle quotidienne reste **inchangée** et ne regarde que ce qui est dû aujourd'hui :
+
+- **Journée parfaite** = tous les **quotas journaliers** remplis **ET** toutes les todos du jour faites.
+- ⚠️ **Journée neutre** : si aucune obligation n'est due aujourd'hui (aucun quota journalier, aucune todo), la journée n'est **ni parfaite ni ratée** — le streak ne monte pas, ne casse pas, aucun bouclier n'est consommé. (Ferme la faille « aucune quête aujourd'hui = streak gratuit ».)
+- Le streak global, le Boss (§3.7) et le malus visible (§3.16) continuent de se calculer sur cette base journalière.
+
+#### 3.5.4 Quêtes générées par le Système (inchangé)
+
+- **Hebdomadaires** (générées lundi 00:00, 2 par semaine) : "Complète {n} quêtes de {stat} cette semaine". Récompense : XP bonus (+100) OU item cosmétique.
+- **Quête de rédemption** : proposée après un streak cassé sans bouclier — "3 journées parfaites d'affilée pour restaurer 50% de ton ancien streak".
 
 ### 3.6 Événements aléatoires 🎲
 
@@ -254,8 +285,14 @@ is_regular (completion_rate_7d > 85%), boss_active
 profiles        (id FK auth.users, username, rank, global_level, created_at)
 user_stats      (user_id, stat ENUM(FOR,INT,SAG,PRO,END), level, current_xp)
 habits          (id, user_id, name, stat, difficulty ENUM(easy,medium,hard),
-                 schedule JSONB {days:[1..7]}, deadline_time TIME, active, created_at)
-habit_logs      (id, habit_id, user_id, date, completed_at, xp_earned, multiplier)
+                 recurrence ENUM(daily,weekly,monthly,yearly,once), frequency INT 1-10,
+                 temporary BOOL, deadline_time TIME, active, created_at)
+                 -- M8 : le quota (recurrence + frequency) remplace schedule {days:[1..7]}
+habit_logs      (id, habit_id, user_id, date, completions INT, completed_at, xp_earned, multiplier)
+                 -- M8 : `completions` = nb de fois dans la journée (quota journalier > 1).
+                 -- UNIQUE(habit_id,date) conservé = idempotence des crons (§8).
+period_closures (id, user_id, habit_id, recurrence, period_start DATE, missing INT, xp_penalty INT)
+                 -- M8 : idempotence du jugement de fin de période. UNIQUE(habit_id, period_start).
 streaks         (user_id, habit_id NULLABLE /* NULL = streak global */,
                  current, best, shields INT, last_completed_date)
 quests          (id, type ENUM(weekly,redemption), user_id, definition JSONB,

@@ -9,7 +9,7 @@ Habit tracker gamifié style Solo Leveling. PWA Next.js + Supabase + Vercel. Zé
 - DA : `SPEC.md §9` (tokens, composant Fenêtre Système, grammaire des couleurs) + mockups de référence dans `design/mockups/`. Utilise la skill frontend-design. Jamais de Tailwind générique : hexagones, corner brackets, glow violet.
 
 ## Milestone en cours
-> **M7 — Polish** (en cours). Fait : refonte navigation 4 onglets (Hub / Quêtes / Rituel / Profil) + 1ère passe de fidélité UI aux mockups (badge de rang héros, flamme de série, radar, cartes de quête, fenêtres glow) + fix safe-area iOS. **Restent** : animations plein écran rank-up / extraction d'Ombre, onboarding complet, sons, et poursuite de la fidélité mockups + UX gestion des habitudes (encore dans un panneau repliable).
+> **M8 — Planification par quota** (en cours, branche `m8-planification`) : récurrence (journalière/hebdo/mensuelle/annuelle/unique) + fréquence 1-10, pénalités en fin de période, journée neutre. Amende le SPEC §3.5 + §5. — Avant : **M7 — Polish** Fait : refonte navigation 4 onglets (Hub / Quêtes / Rituel / Profil) + 1ère passe de fidélité UI aux mockups (badge de rang héros, flamme de série, radar, cartes de quête, fenêtres glow) + fix safe-area iOS. **Restent** : animations plein écran rank-up / extraction d'Ombre, onboarding complet, sons, et poursuite de la fidélité mockups + UX gestion des habitudes (encore dans un panneau repliable).
 
 Workflow : une branche par milestone (`m0-socle`, `m1-core-loop`…), PR à la fin, on ne commence pas le milestone suivant sans mon GO.
 
